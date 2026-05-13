@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image';
+import logo from "../../../public/logo.png";
+
 
 export default function SignupPage() {
   const router = useRouter();
@@ -168,7 +171,7 @@ export default function SignupPage() {
             <p className="text-muted-foreground dark:text-gray-400">
               Already have an account?{' '}
               <Link
-                href="/login"
+                href="/auth/login"
                 className="text-accent hover:text-accent/80 font-medium"
               >
                 Sign in
@@ -186,20 +189,8 @@ export default function SignupPage() {
         </div>
 
         <div className="relative z-10 text-center max-w-md">
-          <div className="mb-6 inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-lg">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
+          <div className="mb-6 inline-flex items-center justify-center">
+           <Image src={logo} alt="Logo" width={130} height={200} />
           </div>
           <h2 className="text-4xl font-bold text-white mb-4">
             Join Our Team

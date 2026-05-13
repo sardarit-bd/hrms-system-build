@@ -45,7 +45,7 @@ export function DashboardLayout({ children }) {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   if (!user) {
@@ -63,21 +63,61 @@ export function DashboardLayout({ children }) {
     return labels[role] || role;
   };
 
-  const menuItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Employees', href: '/employees', icon: Users },
-    { label: 'Attendance', href: '/attendance', icon: Calendar },
-    { label: 'Leave', href: '/leave', icon: Briefcase },
-    { label: 'Projects', href: '/projects', icon: Briefcase },
-    { label: 'Documents', href: '/documents', icon: FileText },
-    { label: 'Reports', href: '/reports', icon: BarChart3 },
-    ...(user.role === 'admin' || user.role === 'hr_manager' || user.role === 'manager' || user.role === 'dept_head'
-      ? [{ label: 'Approvals', href: '/approvals', icon: CheckCircle }]
-      : []),
-    ...(user.role === 'admin' || user.role === 'hr_manager'
-      ? [{ label: 'Settings', href: '/settings', icon: Settings }]
-      : []),
+
+
+  // admin MenuItem here
+  const AdminmenuItems = [
+    { label: 'Dashboard', href: '/workspace/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Employees', href: '/workspace/admin/employees', icon: Users },
+    { label: 'Attendance', href: '/workspace/admin/attendance', icon: Calendar },
+    { label: 'Leave', href: '/workspace/admin/leave', icon: Briefcase },
+    { label: 'Projects', href: '/workspace/admin/projects', icon: Briefcase },
+    { label: 'Documents', href: '/workspace/admin/documents', icon: FileText },
+    { label: 'Reports', href: '/workspace/admin/reports', icon: BarChart3 },
+   { label: 'Approvals', href: '/workspace/admin/approvals', icon: CheckCircle },
+    { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
   ];
+
+
+
+
+
+  // employee MenuItem here
+  const employeemenuItems = [
+    { label: 'Dashboard', href: '/workspace/employee/dashboard', icon: LayoutDashboard },
+    { label: 'Employees', href: '/workspace/employee/employees', icon: Users },
+    { label: 'Attendance', href: '/workspace/employee/attendance', icon: Calendar },
+    { label: 'Leave', href: '/workspace/employee/leave', icon: Briefcase },
+    { label: 'Projects', href: '/workspace/employee/projects', icon: Briefcase },
+    { label: 'Documents', href: '/workspace/employee/documents', icon: FileText },
+    { label: 'Reports', href: '/workspace/employee/reports', icon: BarChart3 },
+    { label: 'Approvals', href: '/workspace/admin/approvals', icon: CheckCircle },
+    { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
+  ];
+
+
+    // employee MenuItem here
+  const HRmenuItems = [
+    { label: 'Dashboard', href: '/workspace/employee/dashboard', icon: LayoutDashboard },
+    { label: 'Employees', href: '/workspace/employee/employees', icon: Users },
+    { label: 'Attendance', href: '/workspace/employee/attendance', icon: Calendar },
+    { label: 'Leave', href: '/workspace/employee/leave', icon: Briefcase },
+    { label: 'Documents', href: '/workspace/employee/documents', icon: FileText },
+    { label: 'Reports', href: '/workspace/employee/reports', icon: BarChart3 },
+    { label: 'Approvals', href: '/workspace/admin/approvals', icon: CheckCircle },
+    { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
+  ];
+
+
+
+
+
+
+
+
+
+const CurrentRolemenuItems = AdminmenuItems;
+
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden">
@@ -91,7 +131,7 @@ export function DashboardLayout({ children }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative z-50 h-full w-64 bg-sidebar dark:bg-slate-900 border-r border-sidebar-border dark:border-slate-800 transition-all duration-300 flex flex-col ${
+        className={`fixed md:relative z-50 h-full w-64 bg-[#1d3a88] dark:bg-slate-900 border-r border-sidebar-border dark:border-slate-800 transition-all duration-300 flex flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -108,17 +148,17 @@ export function DashboardLayout({ children }) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1">
-          {menuItems.map((item) => {
+          {CurrentRolemenuItems.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => isMobile && setSidebarOpen(false)}
-                className="text-white flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-md text-sidebar-accent-foreground dark:text-gray-300 hover:bg-sidebar-accent dark:hover:bg-slate-800 transition-colors group min-h-[44px] sm:min-h-auto"
+                className="text-white flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-md text-sidebar-accent-foreground dark:text-gray-300 dark:hover:bg-slate-800 transition-colors group min-h-[44px] sm:min-h-auto hover:bg-sidebar-accent"
               >
                 <Icon size={20} className="flex-shrink-0 group-hover:text-sidebar-primary" />
-                <span className="text-sm font-medium">{item.label}</span>
+                <span className="text-sm font-medium group-hover:text-sidebar-primary">{item.label}</span>
               </Link>
             );
           })}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
-import logo from "../../public/logo.png";
+import logo from "../../../public/logo.png";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -31,10 +31,28 @@ export default function LoginPage() {
 
     const result = await login(email, password);
     if (result.success) {
-      router.push('/dashboard');
+
+   
+      const roleRoutes = {
+    admin: '/workspace/admin/dashboard',
+    manager: '/workspace/manager/dashboard',
+    hr_manager: '/workspace/hr/dashboard',
+    dept_head: '/workspace/leader/dashboard',
+    employee: '/workspace/employee/dashboard',
+  };
+
+  const userRole = result?.user?.role;
+
+  router.push(
+    roleRoutes[userRole] || '/workspace/employee/dashboard'
+  );
+
+
     } else {
       setError(result.error);
     }
+
+
     setLoading(false);
   };
 
@@ -120,23 +138,11 @@ export default function LoginPage() {
             <p className="text-muted-foreground dark:text-gray-400">
               Don&apos;t have an account?{' '}
               <Link
-                href="/signup"
+                href="/auth/signup"
                 className="text-accent hover:text-accent/80 font-medium"
               >
                 Sign up
               </Link>
-            </p>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-border dark:border-slate-700">
-            <p className="text-xs text-muted-foreground dark:text-gray-500 text-center">
-              Demo Credentials:
-            </p>
-            <p className="text-xs text-muted-foreground dark:text-gray-500 text-center mt-2">
-              Admin: admin@hrms.com / admin123
-            </p>
-            <p className="text-xs text-muted-foreground dark:text-gray-500 text-center">
-              Employee: employee@hrms.com / emp123
             </p>
           </div>
         </div>
@@ -153,9 +159,6 @@ export default function LoginPage() {
           <div className="mb-6 inline-flex items-center justify-center">
             <Image src={logo} alt="Logo" width={250} height={200} />
           </div>
-          <h2 className="text-4xl font-bold text-white mb-4">
-            HR Management System
-          </h2>
           <p className="text-blue-100 text-lg leading-relaxed">
             Streamline your HR operations with our comprehensive employee
             management platform. Track attendance, manage leaves, and grow your
@@ -164,7 +167,7 @@ export default function LoginPage() {
 
           <div className="mt-8 grid grid-cols-3 gap-4 pt-8 border-t border-white/10">
             <div>
-              <div className="text-2xl font-bold text-white">1000+</div>
+              <div className="text-2xl font-bold text-white">100+</div>
               <p className="text-blue-100 text-sm mt-1">Employees</p>
             </div>
             <div>
