@@ -58,10 +58,10 @@ export function AuthProvider({ children }) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Handle token expiration
       if (response.status === 401 && authToken) {
         setAuthToken(null);
         setUser(null);
+
         if (
           typeof window !== "undefined" &&
           !window.location.pathname.includes("/auth/login")
@@ -69,7 +69,13 @@ export function AuthProvider({ children }) {
           window.location.href = "/auth/login";
         }
       }
-      throw new Error(data.message || data.error || "Request failed");
+
+      const error = new Error(data.message || data.error || "Request failed");
+      error.status = response.status;
+      error.errors = data.errors;
+      error.data = data;
+
+      throw error;
     }
 
     return data;
@@ -119,25 +125,25 @@ export function AuthProvider({ children }) {
   // Login function
   const login = async (email, password) => {
     try {
-      const data = await apiRequest('/auth/login', {
-        method: 'POST',
+      const data = await apiRequest("/auth/login", {
+        method: "POST",
         body: JSON.stringify({ email, password }),
       });
-  
+
       if (data.status && data.data) {
         const { access_token, user: userData } = data.data;
-        
+
         setAuthToken(access_token);
-        
-        if (userData.status !== 'active') {
+
+        if (userData.status !== "active") {
           setAuthToken(null);
-          gooeyToast.warning('Account Pending', {
-            description: 'Your account is pending admin approval.',
+          gooeyToast.warning("Account Pending", {
+            description: "Your account is pending admin approval.",
             duration: 5000,
           });
-          return { success: false, error: 'Account pending approval' };
+          return { success: false, error: "Account pending approval" };
         }
-  
+
         const transformedUser = {
           id: userData.id,
           name: userData.full_name || userData.name,
@@ -149,20 +155,20 @@ export function AuthProvider({ children }) {
           employee_code: userData.employee_code,
           phone: userData.phone,
         };
-  
+
         setUser(transformedUser);
-        
+
         // gooeyToast.success('Login Successful!', {
         //   description: `Welcome back, ${transformedUser.name}!`,
         //   duration: 3000,
         // });
-        
+
         return { success: true, user: transformedUser };
       }
-      
-      return { success: false, error: 'Invalid credentials' };
+
+      return { success: false, error: "Invalid credentials" };
     } catch (error) {
-      gooeyToast.error('Login Failed', {
+      gooeyToast.error("Login Failed", {
         description: error.message,
         duration: 4000,
       });

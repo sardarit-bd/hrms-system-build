@@ -47,7 +47,6 @@ import {
   Edit,
   UserCog,
   CheckCircle,
-  XCircle,
   Trash2,
   Calendar,
   Shield,
@@ -58,7 +57,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { gooeyToast } from "@/components/ui/goey-toaster";
-import Link from "next/link";
 
 const STATUS_COLORS = {
   active:
@@ -71,12 +69,11 @@ const STATUS_COLORS = {
 
 const ROLE_LABELS = {
   super_admin: "Super Admin",
-  admin: "Admin",
   general_manager: "General Manager",
+  hr: "HR Manager",
   project_manager: "Project Manager",
   team_leader: "Team Leader",
   employee: "Employee",
-  hr_manager: "HR Manager",
 };
 
 export default function EmployeesPage() {
@@ -85,6 +82,8 @@ export default function EmployeesPage() {
 
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [shifts, setShifts] = useState([]);
+  const [attendancePolicies, setAttendancePolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -111,6 +110,24 @@ export default function EmployeesPage() {
     newStatus: "",
   });
 
+  // Assign Role Dialog
+  const [assignRoleDialogOpen, setAssignRoleDialogOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [assigningRole, setAssigningRole] = useState(false);
+
+  // Assign Roster Dialog
+  const [assignRosterDialogOpen, setAssignRosterDialogOpen] = useState(false);
+  const [selectedShift, setSelectedShift] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [assigningRoster, setAssigningRoster] = useState(false);
+
+  // Assign Policy Dialog
+  const [assignPolicyDialogOpen, setAssignPolicyDialogOpen] = useState(false);
+  const [selectedPolicy, setSelectedPolicy] = useState("");
+  const [assigningPolicy, setAssigningPolicy] = useState(false);
+
   const fetchEmployees = useCallback(async () => {
     try {
       const params = new URLSearchParams();
@@ -124,7 +141,6 @@ export default function EmployeesPage() {
       const response = await apiRequest(`/users?${params.toString()}`);
 
       if (response.status && response.data) {
-        console.log("USERS RESPONSE:", response.data);
         setEmployees(response.data);
         setTotal(response.meta?.total || response.data.length);
       }
@@ -147,21 +163,35 @@ export default function EmployeesPage() {
     departmentFilter,
   ]);
 
-  const fetchDepartments = useCallback(async () => {
+  const fetchDropdownData = useCallback(async () => {
     try {
-      const response = await apiRequest("/departments");
-      if (response.status && response.data) {
-        setDepartments(response.data);
+      const [deptRes, shiftsRes, policiesRes] = await Promise.allSettled([
+        apiRequest("/departments"),
+        apiRequest("/shifts"),
+        apiRequest("/attendance/policies"),
+      ]);
+
+      if (deptRes.status === "fulfilled" && deptRes.value?.data) {
+        setDepartments(deptRes.value.data);
+      }
+      if (shiftsRes.status === "fulfilled" && shiftsRes.value?.status) {
+        setShifts(shiftsRes.value.data || []);
+      } else {
+        console.error("SHIFT API FAILED:", shiftsRes);
+        setShifts([]);
+      }
+      if (policiesRes.status === "fulfilled" && policiesRes.value?.data) {
+        setAttendancePolicies(policiesRes.value.data);
       }
     } catch (error) {
-      console.error("Failed to fetch departments:", error);
+      console.error("Failed to fetch dropdown data:", error);
     }
   }, [apiRequest]);
 
   useEffect(() => {
     fetchEmployees();
-    fetchDepartments();
-  }, [fetchEmployees, fetchDepartments]);
+    fetchDropdownData();
+  }, [fetchEmployees, fetchDropdownData]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -214,10 +244,137 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleAssignRole = async () => {
+    if (!selectedRole || !selectedEmployee) {
+      gooeyToast.error("Missing Field", {
+        description: "Please select a role.",
+      });
+      return;
+    }
+
+    setAssigningRole(true);
+    try {
+      await apiRequest("/roles/assign", {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: selectedEmployee.id,
+          role: selectedRole,
+        }),
+      });
+
+      gooeyToast.success("Role Assigned", {
+        description: `${selectedEmployee.full_name} role updated to ${ROLE_LABELS[selectedRole]}.`,
+      });
+
+      setAssignRoleDialogOpen(false);
+      setSelectedRole("");
+      setSelectedEmployee(null);
+      fetchEmployees();
+    } catch (error) {
+      gooeyToast.error("Assignment Failed", {
+        description: error.message,
+      });
+    } finally {
+      setAssigningRole(false);
+    }
+  };
+
+  const handleAssignRoster = async () => {
+    if (!selectedShift || !selectedEmployee) {
+      gooeyToast.error("Missing Field", {
+        description: "Please select a shift.",
+      });
+      return;
+    }
+
+    setAssigningRoster(true);
+    try {
+      await apiRequest("/roster", {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: selectedEmployee.id,
+          shift_id: parseInt(selectedShift),
+          weekend_days: ["friday", "saturday"],
+          effective_from: effectiveDate,
+        }),
+      });
+
+      gooeyToast.success("Roster Assigned", {
+        description: `Roster assigned to ${selectedEmployee.full_name}.`,
+      });
+
+      setAssignRosterDialogOpen(false);
+      setSelectedShift("");
+      setSelectedEmployee(null);
+      setEffectiveDate(new Date().toISOString().split("T")[0]);
+    } catch (error) {
+      gooeyToast.error("Assignment Failed", {
+        description: error.message,
+      });
+    } finally {
+      setAssigningRoster(false);
+    }
+  };
+
+  const handleAssignPolicy = async () => {
+    if (!selectedPolicy || !selectedEmployee) {
+      gooeyToast.error("Missing Field", {
+        description: "Please select a policy.",
+      });
+      return;
+    }
+
+    setAssigningPolicy(true);
+    try {
+      await apiRequest("/attendance/policies/assign", {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: selectedEmployee.id,
+          attendance_policy_id: parseInt(selectedPolicy),
+          effective_from: effectiveDate,
+        }),
+      });
+
+      gooeyToast.success("Policy Assigned", {
+        description: `Attendance policy assigned to ${selectedEmployee.full_name}.`,
+      });
+
+      setAssignPolicyDialogOpen(false);
+      setSelectedPolicy("");
+      setSelectedEmployee(null);
+      setEffectiveDate(new Date().toISOString().split("T")[0]);
+    } catch (error) {
+      gooeyToast.error("Assignment Failed", {
+        description: error.message,
+      });
+    } finally {
+      setAssigningPolicy(false);
+    }
+  };
+
+  const handleApproveEmployee = async (employee) => {
+    try {
+      await apiRequest(`/users/${employee.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "active" }),
+      });
+
+      gooeyToast.success("Employee Approved", {
+        description: `${employee.full_name} has been approved and can now login.`,
+      });
+
+      fetchEmployees();
+    } catch (error) {
+      gooeyToast.error("Approval Failed", {
+        description: error.message,
+      });
+    }
+  };
+
   const getStatusBadge = (status) => {
     return (
       <Badge
-        className={`${STATUS_COLORS[status] || STATUS_COLORS.inactive} cursor-pointer`}
+        className={`${STATUS_COLORS[status] || STATUS_COLORS.inactive} cursor-default`}
       >
         {status?.charAt(0).toUpperCase() + status?.slice(1) || "Unknown"}
       </Badge>
@@ -228,7 +385,6 @@ export default function EmployeesPage() {
     const department = departments.find(
       (dept) => Number(dept.id) === Number(departmentId),
     );
-
     return department?.name || "—";
   };
 
@@ -300,24 +456,19 @@ export default function EmployeesPage() {
             <SelectTrigger className="cursor-pointer border border-gray-200">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
-
             <SelectContent>
               <SelectItem value="all" className="cursor-pointer">
                 All Status
               </SelectItem>
-
               <SelectItem value="active" className="cursor-pointer">
                 Active
               </SelectItem>
-
               <SelectItem value="inactive" className="cursor-pointer">
                 Inactive
               </SelectItem>
-
               <SelectItem value="terminated" className="cursor-pointer">
                 Terminated
               </SelectItem>
-
               <SelectItem value="pending" className="cursor-pointer">
                 Pending
               </SelectItem>
@@ -333,12 +484,10 @@ export default function EmployeesPage() {
             <SelectTrigger className="cursor-pointer border border-gray-200">
               <SelectValue placeholder="All Roles" />
             </SelectTrigger>
-
             <SelectContent>
               <SelectItem value="all" className="cursor-pointer">
                 All Roles
               </SelectItem>
-
               {Object.entries(ROLE_LABELS).map(([value, label]) => (
                 <SelectItem
                   key={value}
@@ -360,12 +509,10 @@ export default function EmployeesPage() {
             <SelectTrigger className="cursor-pointer border border-gray-200">
               <SelectValue placeholder="All Departments" />
             </SelectTrigger>
-
             <SelectContent>
               <SelectItem value="all" className="cursor-pointer">
                 All Departments
               </SelectItem>
-
               {departments.map((dept) => (
                 <SelectItem
                   key={dept.id}
@@ -468,6 +615,8 @@ export default function EmployeesPage() {
                               Actions
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+
+                            {/* View Details */}
                             <DropdownMenuItem
                               className="cursor-pointer"
                               onClick={() =>
@@ -479,6 +628,8 @@ export default function EmployeesPage() {
                               <Eye size={14} className="mr-2" />
                               View Details
                             </DropdownMenuItem>
+
+                            {/* Edit Employee */}
                             <DropdownMenuItem
                               className="cursor-pointer"
                               onClick={() =>
@@ -490,9 +641,12 @@ export default function EmployeesPage() {
                               <Edit size={14} className="mr-2" />
                               Edit Employee
                             </DropdownMenuItem>
+
+                            {/* Change Status */}
                             <DropdownMenuItem
                               className="cursor-pointer"
                               onClick={() => {
+                                setSelectedEmployee(employee);
                                 setStatusChangeData({
                                   user: employee,
                                   newStatus:
@@ -508,20 +662,66 @@ export default function EmployeesPage() {
                                 ? "Deactivate"
                                 : "Activate"}
                             </DropdownMenuItem>
-                            {employee.status === "inactive" && (
-                              <DropdownMenuItem
-                                className="cursor-pointer text-emerald-600"
-                                onClick={() =>
-                                  router.push(
-                                    `/workspace/admin/employees/${employee.id}?tab=approve`,
-                                  )
-                                }
-                              >
-                                <CheckCircle size={14} className="mr-2" />
-                                Approve Employee
-                              </DropdownMenuItem>
+
+                            {/* Assign Role */}
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setSelectedRole("");
+                                setAssignRoleDialogOpen(true);
+                              }}
+                            >
+                              <Shield size={14} className="mr-2" />
+                              Assign Role
+                            </DropdownMenuItem>
+
+                            {/* Assign Roster */}
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setSelectedShift("");
+                                setAssignRosterDialogOpen(true);
+                              }}
+                            >
+                              <Calendar size={14} className="mr-2" />
+                              Assign Roster
+                            </DropdownMenuItem>
+
+                            {/* Assign Attendance Policy */}
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setSelectedPolicy("");
+                                setAssignPolicyDialogOpen(true);
+                              }}
+                            >
+                              <Shield size={14} className="mr-2" />
+                              Assign Attendance Policy
+                            </DropdownMenuItem>
+
+                            {/* Approve Employee (only for inactive/pending) */}
+                            {(employee.status === "inactive" ||
+                              employee.status === "pending") && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-emerald-600 focus:text-emerald-600"
+                                  onClick={() =>
+                                    handleApproveEmployee(employee)
+                                  }
+                                >
+                                  <CheckCircle size={14} className="mr-2" />
+                                  Approve Employee
+                                </DropdownMenuItem>
+                              </>
                             )}
+
                             <DropdownMenuSeparator />
+
+                            {/* Delete Employee */}
                             <DropdownMenuItem
                               className="cursor-pointer text-red-600 focus:text-red-600"
                               onClick={() => {
@@ -631,6 +831,180 @@ export default function EmployeesPage() {
             </Button>
             <Button onClick={handleStatusChange} className="cursor-pointer">
               Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Role Dialog */}
+      <Dialog
+        open={assignRoleDialogOpen}
+        onOpenChange={setAssignRoleDialogOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Role</DialogTitle>
+            <DialogDescription>
+              Select a new role for {selectedEmployee?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                    <SelectItem
+                      key={value}
+                      value={value}
+                      className="cursor-pointer"
+                    >
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAssignRoleDialogOpen(false)}
+              className="cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignRole}
+              disabled={assigningRole}
+              className="cursor-pointer"
+            >
+              {assigningRole ? "Assigning..." : "Assign Role"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Roster Dialog */}
+      <Dialog
+        open={assignRosterDialogOpen}
+        onOpenChange={setAssignRosterDialogOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Roster</DialogTitle>
+            <DialogDescription>
+              Set shift schedule for {selectedEmployee?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Shift</Label>
+              <Select value={selectedShift} onValueChange={setSelectedShift}>
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue placeholder="Select shift" />
+                </SelectTrigger>
+                <SelectContent>
+                  {shifts.map((shift) => (
+                    <SelectItem
+                      key={shift.id}
+                      value={shift.id.toString()}
+                      className="cursor-pointer"
+                    >
+                      {shift.name} ({shift.start_time} - {shift.end_time})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Effective From</Label>
+              <Input
+                type="date"
+                value={effectiveDate}
+                onChange={(e) => setEffectiveDate(e.target.value)}
+                className="cursor-pointer"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAssignRosterDialogOpen(false)}
+              className="cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignRoster}
+              disabled={assigningRoster}
+              className="cursor-pointer"
+            >
+              {assigningRoster ? "Assigning..." : "Assign Roster"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Policy Dialog */}
+      <Dialog
+        open={assignPolicyDialogOpen}
+        onOpenChange={setAssignPolicyDialogOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Attendance Policy</DialogTitle>
+            <DialogDescription>
+              Apply attendance policy for {selectedEmployee?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Attendance Policy</Label>
+              <Select value={selectedPolicy} onValueChange={setSelectedPolicy}>
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue placeholder="Select policy" />
+                </SelectTrigger>
+                <SelectContent>
+                  {attendancePolicies.map((policy) => (
+                    <SelectItem
+                      key={policy.id}
+                      value={policy.id.toString()}
+                      className="cursor-pointer"
+                    >
+                      {policy.name} (Grace: {policy.grace_period_minutes} min)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Effective From</Label>
+              <Input
+                type="date"
+                value={effectiveDate}
+                onChange={(e) => setEffectiveDate(e.target.value)}
+                className="cursor-pointer"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAssignPolicyDialogOpen(false)}
+              className="cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignPolicy}
+              disabled={assigningPolicy}
+              className="cursor-pointer"
+            >
+              {assigningPolicy ? "Assigning..." : "Assign Policy"}
             </Button>
           </DialogFooter>
         </DialogContent>
