@@ -1,245 +1,242 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { DashboardLayout } from '@/components/dashboard-layout';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { projects } from '@/lib/demo-data/projects';
-import {
-  Plus,
-  Search,
-  Filter,
-  MoreVertical,
-  Calendar,
-  Users,
-  TrendingUp,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  ArrowRight,
-  Briefcase,
-  X,
-} from 'lucide-react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Plus } from "lucide-react";
+import { gooeyToast } from "@/components/ui/goey-toaster";
+import CreateProjectDialog from "../../../../../components/workspace/admin/project/CreateProjectDialog";
+import ProjectsTable from "../../../../../components/workspace/admin/project/ProjectsTable";
+import ProjectFilters from "../../../../../components/workspace/admin/project/ProjectFilters";
+
 
 export default function ProjectsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showNewProject, setShowNewProject] = useState(false);
+  const { apiRequest } = useAuth();
+  
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [projectManagers, setProjectManagers] = useState([]);
+  const [channels, setChannels] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage] = useState(15);
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [managerFilter, setManagerFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  
+  // Dialog states
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  
+  // Active tab
+  const [activeTab, setActiveTab] = useState("all");
 
-  const statuses = {
-    completed: { label: 'Completed', color: 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400', icon: CheckCircle },
-    in_progress: { label: 'In Progress', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400', icon: Clock },
-    planning: { label: 'Planning', color: 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-400', icon: AlertCircle },
-    on_hold: { label: 'On Hold', color: 'bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-400', icon: AlertCircle },
+  const fetchProjects = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      params.append("per_page", perPage);
+      params.append("page", currentPage);
+      if (searchTerm) params.append("search", searchTerm);
+      if (statusFilter) params.append("status", statusFilter);
+      if (typeFilter) params.append("type", typeFilter);
+      if (managerFilter) params.append("project_manager_id", managerFilter);
+      if (fromDate) params.append("from_date", fromDate);
+      if (toDate) params.append("to_date", toDate);
+      
+      let response;
+      if (activeTab === "ongoing") {
+        response = await apiRequest(`/projects/ongoing?${params.toString()}`);
+      } else if (activeTab === "overdue") {
+        response = await apiRequest(`/projects/overdue?${params.toString()}`);
+      } else {
+        response = await apiRequest(`/projects?${params.toString()}`);
+      }
+      
+      if (response.status && response.data) {
+        setProjects(response.data);
+        setTotal(response.meta?.total || response.data.length);
+      }
+    } catch (error) {
+      console.error("Failed to fetch projects:", error);
+      gooeyToast.error("Failed to Load Projects", {
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [apiRequest, perPage, currentPage, searchTerm, statusFilter, typeFilter, managerFilter, fromDate, toDate, activeTab]);
+
+  const fetchDropdownData = useCallback(async () => {
+    try {
+      const [managersRes, channelsRes] = await Promise.allSettled([
+        apiRequest("/users/list/project-managers"),
+        apiRequest("/channels/active"),
+      ]);
+
+      if (managersRes.status === "fulfilled" && managersRes.value?.data) {
+        setProjectManagers(managersRes.value.data);
+      }
+      if (channelsRes.status === "fulfilled" && channelsRes.value?.data) {
+        setChannels(channelsRes.value.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch dropdown data:", error);
+    }
+  }, [apiRequest]);
+
+  useEffect(() => {
+    fetchProjects();
+    fetchDropdownData();
+  }, [fetchProjects, fetchDropdownData]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchProjects();
   };
 
-  const priorities = {
-    critical: { label: 'Critical', color: 'text-red-600 dark:text-red-400' },
-    high: { label: 'High', color: 'text-orange-600 dark:text-orange-400' },
-    medium: { label: 'Medium', color: 'text-yellow-600 dark:text-yellow-400' },
-    low: { label: 'Low', color: 'text-green-600 dark:text-green-400' },
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("");
+    setTypeFilter("");
+    setManagerFilter("");
+    setFromDate("");
+    setToDate("");
+    setCurrentPage(1);
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    setCurrentPage(1);
+    resetFilters();
+  };
+
+  if (loading) {
+    return <ProjectsSkeleton />;
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="w-full sm:w-auto">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground dark:text-white">
-              Projects
-            </h1>
-            <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
-              Manage and track all company projects
-            </p>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950/50">
+        <div className="space-y-6 p-4 sm:p-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                Projects
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                Manage and track all company projects
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="gap-2 cursor-pointer"
+              >
+                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setCreateDialogOpen(true)}
+                className="gap-2 bg-[#1D3A88] hover:bg-[#142558] cursor-pointer"
+              >
+                <Plus size={14} />
+                New Project
+              </Button>
+            </div>
           </div>
-          <Button
-            onClick={() => setShowNewProject(!showNewProject)}
-            className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white flex items-center justify-center gap-2"
-          >
-            <Plus size={20} />
-            New Project
-          </Button>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400">
-                  Total Projects
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-foreground dark:text-white mt-1">
-                  {projects.length}
-                </p>
-              </div>
-              <Briefcase className="text-accent flex-shrink-0" size={24} />
-            </div>
-          </Card>
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400">
-                  In Progress
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                  {projects.filter((p) => p.status === 'in_progress').length}
-                </p>
-              </div>
-              <Clock className="text-blue-600 dark:text-blue-400 flex-shrink-0" size={24} />
-            </div>
-          </Card>
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400">
-                  Completed
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                  {projects.filter((p) => p.status === 'completed').length}
-                </p>
-              </div>
-              <CheckCircle className="text-green-600 dark:text-green-400 flex-shrink-0" size={24} />
-            </div>
-          </Card>
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400">
-                  Team Members
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-                  {new Set(projects.flatMap((p) => p.team.map((t) => t.id))).size}
-                </p>
-              </div>
-              <Users className="text-purple-600 dark:text-purple-400 flex-shrink-0" size={24} />
-            </div>
-          </Card>
-        </div>
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="all" className="cursor-pointer">All Projects</TabsTrigger>
+              <TabsTrigger value="ongoing" className="cursor-pointer">Ongoing</TabsTrigger>
+              <TabsTrigger value="overdue" className="cursor-pointer">Overdue</TabsTrigger>
+            </TabsList>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-border dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-foreground dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent text-sm sm:text-base min-h-[44px] sm:min-h-auto"
-            />
+            <TabsContent value={activeTab} className="space-y-6">
+              {/* Filters */}
+              <ProjectFilters
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                typeFilter={typeFilter}
+                setTypeFilter={setTypeFilter}
+                managerFilter={managerFilter}
+                setManagerFilter={setManagerFilter}
+                fromDate={fromDate}
+                setFromDate={setFromDate}
+                toDate={toDate}
+                setToDate={setToDate}
+                projectManagers={projectManagers}
+                onReset={resetFilters}
+              />
+
+              {/* Projects Table */}
+              <ProjectsTable
+                projects={projects}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                total={total}
+                perPage={perPage}
+                onRefresh={fetchProjects}
+                projectManagers={projectManagers}
+                channels={channels}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Create Project Dialog */}
+      <CreateProjectDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={fetchProjects}
+        projectManagers={projectManagers}
+        channels={channels}
+      />
+    </DashboardLayout>
+  );
+}
+
+// Loading Skeleton
+function ProjectsSkeleton() {
+  return (
+    <DashboardLayout>
+      <div className="space-y-6 p-4 sm:p-6">
+        <div className="flex justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 sm:py-2 border border-border dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-foreground dark:text-white focus:outline-none focus:ring-2 focus:ring-accent text-sm sm:text-base min-h-[44px] sm:min-h-auto"
-          >
-            <option value="all">All Status</option>
-            <option value="planning">Planning</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="on_hold">On Hold</option>
-          </select>
+          <div className="h-9 w-28 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
         </div>
-
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredProjects.map((project) => {
-            const StatusIcon = statuses[project.status].icon;
-            return (
-              <Link key={project.id} href={`/workspace/admin/projects/${project.id}`}>
-                <Card className="h-full hover:shadow-lg hover:border-accent transition-all cursor-pointer">
-                  <div className="p-4 sm:p-6 flex flex-col h-full">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground dark:text-white truncate text-base sm:text-lg">
-                          {project.name}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mt-1 line-clamp-2">
-                          {project.description}
-                        </p>
-                      </div>
-                      <button className="p-2 hover:bg-secondary dark:hover:bg-slate-800 rounded-md transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto flex items-center justify-center">
-                        <MoreVertical size={18} className="text-muted-foreground" />
-                      </button>
-                    </div>
-
-                    {/* Status and Priority */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${statuses[project.status].color}`}>
-                        <StatusIcon size={14} />
-                        {statuses[project.status].label}
-                      </span>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-secondary dark:bg-slate-800 ${priorities[project.priority].color}`}>
-                        {priorities[project.priority].label}
-                      </span>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400">
-                          Progress
-                        </p>
-                        <p className="text-xs sm:text-sm font-semibold text-foreground dark:text-white">
-                          {project.progress}%
-                        </p>
-                      </div>
-                      <div className="w-full bg-secondary dark:bg-slate-700 rounded-full h-2">
-                        <div
-                          className="bg-accent h-2 rounded-full transition-all"
-                          style={{ width: `${project.progress}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Meta Information */}
-                    <div className="space-y-2 mb-4 text-xs sm:text-sm flex-1">
-                      <div className="flex items-center gap-2 text-muted-foreground dark:text-gray-400">
-                        <Calendar size={16} />
-                        <span>
-                          {new Date(project.startDate).toLocaleDateString()} -{' '}
-                          {new Date(project.endDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground dark:text-gray-400">
-                        <Users size={16} />
-                        <span>{project.team.length} Team Members</span>
-                      </div>
-                    </div>
-
-                    {/* Footer with Arrow */}
-                    <div className="flex items-center justify-between text-accent pt-4 border-t border-border dark:border-slate-700">
-                      <span className="text-xs sm:text-sm font-medium">
-                        View Details
-                      </span>
-                      <ArrowRight size={16} />
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
+        <div className="h-10 w-64 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+        <div className="rounded-lg border">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4 border-b">
+              <div className="h-5 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-5 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-5 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-5 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-5 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+            </div>
+          ))}
         </div>
-
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <AlertCircle className="mx-auto text-muted-foreground mb-4" size={48} />
-            <p className="text-muted-foreground dark:text-gray-400">
-              No projects found matching your criteria.
-            </p>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );
