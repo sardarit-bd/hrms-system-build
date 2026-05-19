@@ -37,8 +37,10 @@ export function AuthProvider({ children }) {
     const url = `${API_BASE_URL}${endpoint}`;
     const authToken = getAuthToken();
 
+    const isFormData = options.body instanceof FormData;
+
     const headers = {
-      "Content-Type": "application/json",
+      ...(!isFormData && { "Content-Type": "application/json" }),
       ...options.headers,
     };
 
@@ -55,7 +57,16 @@ export function AuthProvider({ children }) {
       headers,
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get("content-type");
+
+    let data;
+
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error(text || "Server did not return JSON response");
+    }
 
     if (!response.ok) {
       if (response.status === 401 && authToken) {

@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  UserCog,
 } from 'lucide-react';
 
 export function DashboardLayout({ children }) {
@@ -101,7 +102,8 @@ export function DashboardLayout({ children }) {
         { label: 'Documents', href: '/workspace/admin/documents', icon: FileText },
         { label: 'Reports', href: '/workspace/admin/reports', icon: BarChart3 },
         { label: 'Approvals', href: '/workspace/admin/approvals', icon: CheckCircle },
-        { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
+        { label: 'Settings', href: '/workspace/employee/settings', icon: Settings },
+        { label: 'Profile', href: '/workspace/admin/profile', icon: UserCog }
       ];
     }
     

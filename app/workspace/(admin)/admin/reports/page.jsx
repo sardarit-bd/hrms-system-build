@@ -1,186 +1,251 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/lib/auth-context';
-import { ProtectedRoute } from '@/components/protected-route';
-import { DashboardLayout } from '@/components/dashboard-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Download, FileText, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, FileText, Calendar, Users, Briefcase, DollarSign } from "lucide-react";
+import { gooeyToast } from "@/components/ui/goey-toaster";
+import ExportSection from "../../../../../components/workspace/admin/report/ExportSection";
+import DepartmentReports from "../../../../../components/workspace/admin/report/DepartmentReports";
+import ProjectReports from "../../../../../components/workspace/admin/report/ProjectReports";
+import PayrollReports from "../../../../../components/workspace/admin/report/PayrollReports";
+import LeaveReports from "../../../../../components/workspace/admin/report/LeaveReports";
+import EmployeeReports from "../../../../../components/workspace/admin/report/EmployeeReports";
+import ReportFilters from "../../../../../components/workspace/admin/report/ReportFilters";
+import AnalyticsCharts from "../../../../../components/workspace/admin/report/AnalyticsCharts";
 
-function ReportsContent() {
-  const { user } = useAuth();
 
-  const reports = [
-    {
-      id: '1',
-      name: 'Monthly Attendance Report',
-      description: 'Employee attendance summary for the current month',
-      category: 'Attendance',
-      icon: '📊',
-    },
-    {
-      id: '2',
-      name: 'Leave Summary Report',
-      description: 'Department-wise leave application and approval status',
-      category: 'Leave',
-      icon: '🏖️',
-    },
-    {
-      id: '3',
-      name: 'Employee Directory',
-      description: 'Complete employee list with contact information',
-      category: 'Employee',
-      icon: '👥',
-    },
-    {
-      id: '4',
-      name: 'Salary Report',
-      description: 'Monthly salary distribution and payroll summary',
-      category: 'Payroll',
-      icon: '💰',
-    },
-    {
-      id: '5',
-      name: 'Department Performance',
-      description: 'Department-wise attendance and productivity metrics',
-      category: 'Analytics',
-      icon: '📈',
-    },
-    {
-      id: '6',
-      name: 'Compliance Report',
-      description: 'HR compliance and policy adherence metrics',
-      category: 'Compliance',
-      icon: '✓',
-    },
-  ];
+export default function ReportsPage() {
+  const { apiRequest } = useAuth();
+  
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Data states
+  const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [payroll, setPayroll] = useState([]);
+  
+  // Filters
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedProject, setSelectedProject] = useState("");
+  
+  const [activeTab, setActiveTab] = useState("employee");
 
-  const handleGenerateReport = (reportId) => {
-    console.log('[v0] Generating report:', reportId);
+  const fetchAllData = useCallback(async (showRefreshToast = false) => {
+    try {
+      const [usersRes, deptRes, projectsRes, leaveRes, payrollRes] = await Promise.allSettled([
+        apiRequest("/users?per_page=500"),
+        apiRequest("/departments"),
+        apiRequest("/projects?per_page=200"),
+        apiRequest("/leave/requests?per_page=500"),
+        apiRequest("/payroll?per_page=200"),
+      ]);
+
+      if (usersRes.status === "fulfilled" && usersRes.value?.data) {
+        setUsers(usersRes.value.data);
+      }
+      if (deptRes.status === "fulfilled" && deptRes.value?.data) {
+        setDepartments(deptRes.value.data);
+      }
+      if (projectsRes.status === "fulfilled" && projectsRes.value?.data) {
+        setProjects(projectsRes.value.data);
+      }
+      if (leaveRes.status === "fulfilled" && leaveRes.value?.data) {
+        setLeaveRequests(leaveRes.value.data);
+      }
+      if (payrollRes.status === "fulfilled" && payrollRes.value?.data) {
+        setPayroll(payrollRes.value.data);
+      }
+
+      if (showRefreshToast) {
+        gooeyToast.success("Reports Refreshed", {
+          description: "All report data has been updated.",
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch report data:", error);
+      gooeyToast.error("Failed to Load Reports", {
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [apiRequest]);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchAllData(true);
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      Attendance: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
-      Leave: 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300',
-      Employee: 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300',
-      Payroll: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300',
-      Analytics: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300',
-      Compliance: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300',
-    };
-    return colors[category] || colors.Analytics;
+  const resetFilters = () => {
+    setDateRange({ from: "", to: "" });
+    setSelectedDepartment("");
+    setSelectedEmployee("");
+    setSelectedStatus("");
+    setSelectedProject("");
   };
+
+  if (loading) {
+    return <ReportsSkeleton />;
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground dark:text-white">
-            Reports & Analytics
-          </h1>
-          <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
-            Generate and export HR reports for analysis and decision making
-          </p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                Reports Generated
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950/50">
+        <div className="space-y-6 p-4 sm:p-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                Reports & Analytics
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                Comprehensive HR analytics and reporting dashboard
               </p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-white">
-                24
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                This Month
-              </p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-white">
-                8
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                Scheduled Reports
-              </p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-white">
-                5
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                Export Formats
-              </p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-white">
-                3
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Available Reports */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <FileText size={20} />
-              Available Reports
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-0">
-              {reports.map((report) => (
-                <div
-                  key={report.id}
-                  className="p-4 bg-secondary dark:bg-slate-800 rounded-lg border border-border dark:border-slate-700 hover:border-accent dark:hover:border-accent transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground dark:text-white truncate text-sm sm:text-base">
-                        {report.name}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mt-1 line-clamp-2">
-                        {report.description}
-                      </p>
-                    </div>
-                    <span className="text-lg flex-shrink-0">{report.icon}</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-border dark:border-slate-700">
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getCategoryColor(report.category)}`}>
-                      {report.category}
-                    </span>
-                    <Button
-                      variant="secondary"
-                      onClick={() => handleGenerateReport(report.id)}
-                      className="w-full sm:w-auto text-xs sm:text-sm py-2 flex items-center justify-center gap-2 min-h-[44px] sm:min-h-auto"
-                    >
-                      <Download size={16} />
-                      Generate
-                    </Button>
-                  </div>
-                </div>
-              ))}
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="gap-2 cursor-pointer"
+              >
+                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <ReportFilters
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            selectedEmployee={selectedEmployee}
+            setSelectedEmployee={setSelectedEmployee}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
+            selectedProject={selectedProject}
+            setSelectedProject={setSelectedProject}
+            departments={departments}
+            users={users}
+            projects={projects}
+            onReset={resetFilters}
+          />
+
+          {/* Analytics Charts */}
+          <AnalyticsCharts
+            users={users}
+            departments={departments}
+            projects={projects}
+            leaveRequests={leaveRequests}
+            payroll={payroll}
+          />
+
+          {/* Tabs for different reports */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
+              <TabsTrigger value="employee" className="cursor-pointer">
+                <Users size={14} className="mr-2" />
+                Employee
+              </TabsTrigger>
+              <TabsTrigger value="leave" className="cursor-pointer">
+                <FileText size={14} className="mr-2" />
+                Leave
+              </TabsTrigger>
+              <TabsTrigger value="payroll" className="cursor-pointer">
+                <DollarSign size={14} className="mr-2" />
+                Payroll
+              </TabsTrigger>
+              <TabsTrigger value="project" className="cursor-pointer">
+                <Briefcase size={14} className="mr-2" />
+                Project
+              </TabsTrigger>
+              <TabsTrigger value="department" className="cursor-pointer">
+                <Calendar size={14} className="mr-2" />
+                Department
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="employee" className="space-y-6">
+              <EmployeeReports
+                users={users}
+                departments={departments}
+                selectedDepartment={selectedDepartment}
+              />
+            </TabsContent>
+
+            <TabsContent value="leave" className="space-y-6">
+              <LeaveReports
+                leaveRequests={leaveRequests}
+                dateRange={dateRange}
+                selectedStatus={selectedStatus}
+              />
+            </TabsContent>
+
+            <TabsContent value="payroll" className="space-y-6">
+              <PayrollReports
+                payroll={payroll}
+                users={users}
+                dateRange={dateRange}
+              />
+            </TabsContent>
+
+            <TabsContent value="project" className="space-y-6">
+              <ProjectReports
+                projects={projects}
+                selectedStatus={selectedStatus}
+                selectedProject={selectedProject}
+              />
+            </TabsContent>
+
+            <TabsContent value="department" className="space-y-6">
+              <DepartmentReports
+                departments={departments}
+                users={users}
+              />
+            </TabsContent>
+          </Tabs>
+
+          {/* Export Section */}
+          <ExportSection />
+        </div>
       </div>
     </DashboardLayout>
   );
 }
 
-export default function ReportsPage() {
+// Loading Skeleton
+function ReportsSkeleton() {
   return (
-    <ProtectedRoute>
-      <ReportsContent />
-    </ProtectedRoute>
+    <DashboardLayout>
+      <div className="space-y-6 p-4 sm:p-6">
+        <div className="flex justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-40 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+            <div className="h-4 w-64 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+          </div>
+          <div className="h-9 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+        </div>
+        <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+        <div className="h-96 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+      </div>
+    </DashboardLayout>
   );
 }
