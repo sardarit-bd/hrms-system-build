@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import logo from "../public/logo.png";
-import Image from 'next/image';
+import Image from "next/image";
 import {
   LayoutDashboard,
   Users,
@@ -22,7 +22,8 @@ import {
   X,
   ChevronDown,
   UserCog,
-} from 'lucide-react';
+  DollarSign,
+} from "lucide-react";
 
 export function DashboardLayout({ children }) {
   const router = useRouter();
@@ -40,13 +41,13 @@ export function DashboardLayout({ children }) {
     };
 
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const handleLogout = async () => {
     await logout();
-    router.push('/auth/login');
+    router.push("/auth/login");
   };
 
   // ✅ Loading state while user is not loaded
@@ -63,22 +64,24 @@ export function DashboardLayout({ children }) {
 
   const getRoleLabel = (role) => {
     const labels = {
-      super_admin: 'Super Admin',
-      admin: 'Administrator',
-      general_manager: 'General Manager',
-      hr_manager: 'HR Manager',
-      dept_head: 'Department Head',
-      project_manager: 'Project Manager',
-      team_leader: 'Team Leader',
-      manager: 'Team Manager',
-      employee: 'Employee',
+      super_admin: "Super Admin",
+      admin: "Administrator",
+      general_manager: "General Manager",
+      hr_manager: "HR Manager",
+      dept_head: "Department Head",
+      project_manager: "Project Manager",
+      team_leader: "Team Leader",
+      manager: "Team Manager",
+      employee: "Employee",
     };
     return labels[role] || role;
   };
 
   // Get user display name safely
   const getUserDisplayName = () => {
-    return user?.name || user?.full_name || user?.email?.split('@')[0] || 'User';
+    return (
+      user?.name || user?.full_name || user?.email?.split("@")[0] || "User"
+    );
   };
 
   // Get user initial safely
@@ -90,74 +93,187 @@ export function DashboardLayout({ children }) {
   // Role based menu items
   const getMenuItemsByRole = () => {
     const role = user?.role;
-    
+
     // Super Admin / Admin Menu
-    if (role === 'super_admin' || role === 'admin') {
+    if (role === "super_admin" || role === "admin") {
       return [
-        { label: 'Dashboard', href: '/workspace/admin/dashboard', icon: LayoutDashboard },
-        { label: 'Employees', href: '/workspace/admin/employees', icon: Users },
-        { label: 'Attendance', href: '/workspace/admin/attendance', icon: Calendar },
-        { label: 'Leave', href: '/workspace/admin/leave', icon: Briefcase },
-        { label: 'Projects', href: '/workspace/admin/projects', icon: Briefcase },
-        { label: 'Documents', href: '/workspace/admin/documents', icon: FileText },
-        { label: 'Reports', href: '/workspace/admin/reports', icon: BarChart3 },
-        { label: 'Approvals', href: '/workspace/admin/approvals', icon: CheckCircle },
-        { label: 'Settings', href: '/workspace/employee/settings', icon: Settings },
-        { label: 'Profile', href: '/workspace/admin/profile', icon: UserCog }
+        {
+          label: "Dashboard",
+          href: "/workspace/admin/dashboard",
+          icon: LayoutDashboard,
+        },
+        { label: "Employees", href: "/workspace/admin/employees", icon: Users },
+        {
+          label: "Attendance",
+          href: "/workspace/admin/attendance",
+          icon: Calendar,
+        },
+        { label: "Leave", href: "/workspace/admin/leave", icon: Briefcase },
+        {
+          label: "Projects",
+          href: "/workspace/admin/projects",
+          icon: Briefcase,
+        },
+        {
+          label: "Documents",
+          href: "/workspace/admin/documents",
+          icon: FileText,
+        },
+        { label: "Reports", href: "/workspace/admin/reports", icon: BarChart3 },
+        {
+          label: "Approvals",
+          href: "/workspace/admin/approvals",
+          icon: CheckCircle,
+        },
+        {
+          label: "Settings",
+          href: "/workspace/employee/settings",
+          icon: Settings,
+        },
+        { label: "Profile", href: "/workspace/admin/profile", icon: UserCog },
       ];
     }
-    
+
     // HR Manager Menu
-    if (role === 'hr_manager') {
+    if (role === "hr_manager") {
       return [
-        { label: 'Dashboard', href: '/workspace/hr/dashboard', icon: LayoutDashboard },
-        { label: 'Employees', href: '/workspace/hr/employees', icon: Users },
-        { label: 'Attendance', href: '/workspace/hr/attendance', icon: Calendar },
-        { label: 'Leave', href: '/workspace/hr/leave', icon: Briefcase },
-        { label: 'Documents', href: '/workspace/hr/documents', icon: FileText },
-        { label: 'Reports', href: '/workspace/hr/reports', icon: BarChart3 },
-        { label: 'Approvals', href: '/workspace/hr/approvals', icon: CheckCircle },
-        { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
+        {
+          label: "Dashboard",
+          href: "/workspace/hr/dashboard",
+          icon: LayoutDashboard,
+        },
+        { label: "Employees", href: "/workspace/hr/employees", icon: Users },
+        {
+          label: "Attendance",
+          href: "/workspace/hr/attendance",
+          icon: Calendar,
+        },
+        { label: "Leave", href: "/workspace/hr/leave", icon: Briefcase },
+        { label: "Documents", href: "/workspace/hr/documents", icon: FileText },
+        { label: "Reports", href: "/workspace/hr/reports", icon: BarChart3 },
+        {
+          label: "Approvals",
+          href: "/workspace/hr/approvals",
+          icon: CheckCircle,
+        },
+        {
+          label: "Settings",
+          href: "/workspace/employee/settings",
+          icon: Settings,
+        },
       ];
     }
-    
+
     // Project Manager Menu
-    if (role === 'project_manager' || role === 'manager') {
+    if (role === "project_manager" || role === "manager") {
       return [
-        { label: 'Dashboard', href: '/workspace/manager/dashboard', icon: LayoutDashboard },
-        { label: 'Team', href: '/workspace/manager/team', icon: Users },
-        { label: 'Attendance', href: '/workspace/manager/attendance', icon: Calendar },
-        { label: 'Leave', href: '/workspace/manager/leave', icon: Briefcase },
-        { label: 'Projects', href: '/workspace/manager/projects', icon: Briefcase },
-        { label: 'Documents', href: '/workspace/manager/documents', icon: FileText },
-        { label: 'Reports', href: '/workspace/manager/reports', icon: BarChart3 },
-        { label: 'Approvals', href: '/workspace/manager/approvals', icon: CheckCircle },
-        { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
+        {
+          label: "Dashboard",
+          href: "/workspace/manager/dashboard",
+          icon: LayoutDashboard,
+        },
+        { label: "Team", href: "/workspace/manager/team", icon: Users },
+        {
+          label: "Attendance",
+          href: "/workspace/manager/attendance",
+          icon: Calendar,
+        },
+        { label: "Leave", href: "/workspace/manager/leave", icon: Briefcase },
+        {
+          label: "Projects",
+          href: "/workspace/manager/projects",
+          icon: Briefcase,
+        },
+        {
+          label: "Documents",
+          href: "/workspace/manager/documents",
+          icon: FileText,
+        },
+        {
+          label: "Reports",
+          href: "/workspace/manager/reports",
+          icon: BarChart3,
+        },
+        {
+          label: "Approvals",
+          href: "/workspace/manager/approvals",
+          icon: CheckCircle,
+        },
+        {
+          label: "Settings",
+          href: "/workspace/employee/settings",
+          icon: Settings,
+        },
       ];
     }
-    
+
     // Team Leader Menu
-    if (role === 'team_leader' || role === 'dept_head') {
+    if (role === "team_leader" || role === "dept_head") {
       return [
-        { label: 'Dashboard', href: '/workspace/leader/dashboard', icon: LayoutDashboard },
-        { label: 'Team', href: '/workspace/leader/team', icon: Users },
-        { label: 'Attendance', href: '/workspace/leader/attendance', icon: Calendar },
-        { label: 'Leave', href: '/workspace/leader/leave', icon: Briefcase },
-        { label: 'Projects', href: '/workspace/leader/projects', icon: Briefcase },
-        { label: 'Documents', href: '/workspace/leader/documents', icon: FileText },
-        { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
+        {
+          label: "Dashboard",
+          href: "/workspace/leader/dashboard",
+          icon: LayoutDashboard,
+        },
+        { label: "Team", href: "/workspace/leader/team", icon: Users },
+        {
+          label: "Attendance",
+          href: "/workspace/leader/attendance",
+          icon: Calendar,
+        },
+        { label: "Leave", href: "/workspace/leader/leave", icon: Briefcase },
+        {
+          label: "Projects",
+          href: "/workspace/leader/projects",
+          icon: Briefcase,
+        },
+        {
+          label: "Documents",
+          href: "/workspace/leader/documents",
+          icon: FileText,
+        },
+        {
+          label: "Settings",
+          href: "/workspace/employee/settings",
+          icon: Settings,
+        },
       ];
     }
-    
+
     // Employee Menu (Default)
     return [
-      { label: 'Dashboard', href: '/workspace/employee/dashboard', icon: LayoutDashboard },
-      { label: 'My Team', href: '/workspace/employee/team', icon: Users },
-      { label: 'Attendance', href: '/workspace/employee/attendance', icon: Calendar },
-      { label: 'Leave', href: '/workspace/employee/leave', icon: Briefcase },
-      { label: 'My Projects', href: '/workspace/employee/projects', icon: Briefcase },
-      { label: 'Documents', href: '/workspace/employee/documents', icon: FileText },
-      { label: 'Settings', href: '/workspace/employee/settings', icon: Settings }
+      {
+        label: "Dashboard",
+        href: "/workspace/employee/dashboard",
+        icon: LayoutDashboard,
+      },
+      { label: "My Team", href: "/workspace/employee/team", icon: Users },
+      {
+        label: "Attendance",
+        href: "/workspace/employee/attendance",
+        icon: Calendar,
+      },
+      { label: "Leave", href: "/workspace/employee/leave", icon: Briefcase },
+      {
+        label: "My Projects",
+        href: "/workspace/employee/projects",
+        icon: Briefcase,
+      },
+      {
+        label: "Payroll",
+        href: "/workspace/employee/my-payroll",
+        icon: DollarSign,
+      },
+      {
+        label: "Documents",
+        href: "/workspace/employee/documents",
+        icon: FileText,
+      },
+      {
+        label: "Settings",
+        href: "/workspace/employee/settings",
+        icon: Settings,
+      },
     ];
   };
 
@@ -176,7 +292,7 @@ export function DashboardLayout({ children }) {
       {/* Sidebar */}
       <aside
         className={`fixed md:relative z-50 h-full w-64 bg-[#1d3a88] dark:bg-slate-900 border-r border-sidebar-border dark:border-slate-800 transition-all duration-300 flex flex-col ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         {/* Logo */}
@@ -201,8 +317,13 @@ export function DashboardLayout({ children }) {
                 onClick={() => isMobile && setSidebarOpen(false)}
                 className="text-white flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-md text-sidebar-accent-foreground dark:text-gray-300 dark:hover:bg-slate-800 transition-colors group min-h-[44px] sm:min-h-auto hover:bg-sidebar-accent"
               >
-                <Icon size={20} className="flex-shrink-0 group-hover:text-sidebar-primary" />
-                <span className="text-sm font-medium group-hover:text-sidebar-primary">{item.label}</span>
+                <Icon
+                  size={20}
+                  className="flex-shrink-0 group-hover:text-sidebar-primary"
+                />
+                <span className="text-sm font-medium group-hover:text-sidebar-primary">
+                  {item.label}
+                </span>
               </Link>
             );
           })}
@@ -225,7 +346,10 @@ export function DashboardLayout({ children }) {
                 {getRoleLabel(user.role)}
               </p>
             </div>
-            <ChevronDown size={16} className={`transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${showUserMenu ? "rotate-180" : ""}`}
+            />
           </button>
 
           {showUserMenu && (
