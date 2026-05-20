@@ -23,6 +23,10 @@ import {
   ChevronDown,
   UserCog,
   DollarSign,
+  BellRing,
+  UserCircle,
+  CalendarDays,
+  FolderKanban,
 } from "lucide-react";
 
 export function DashboardLayout({ children }) {
@@ -247,32 +251,47 @@ export function DashboardLayout({ children }) {
         href: "/workspace/employee/dashboard",
         icon: LayoutDashboard,
       },
-      { label: "My Team", href: "/workspace/employee/team", icon: Users },
+
       {
         label: "Attendance",
-        href: "/workspace/employee/attendance",
+        href: "/workspace/employee/my-attendance",
         icon: Calendar,
       },
-      { label: "Leave", href: "/workspace/employee/leave", icon: Briefcase },
+
       {
-        label: "My Projects",
-        href: "/workspace/employee/projects",
+        label: "Leave",
+        href: "/workspace/employee/my-leave",
         icon: Briefcase,
       },
+
       {
-        label: "Payroll",
+        label: "My Projects",
+        href: "/workspace/employee/my-projects",
+        icon: FolderKanban,
+      },
+
+      {
+        label: "My Payroll",
         href: "/workspace/employee/my-payroll",
         icon: DollarSign,
       },
+
       {
-        label: "Documents",
-        href: "/workspace/employee/documents",
-        icon: FileText,
+        label: "Notifications",
+        href: "/workspace/employee/notifications",
+        icon: BellRing,
       },
+
       {
-        label: "Settings",
-        href: "/workspace/employee/settings",
-        icon: Settings,
+        label: "Holidays",
+        href: "/workspace/employee/holidays",
+        icon: CalendarDays,
+      },
+
+      {
+        label: "My Profile",
+        href: "/workspace/employee/my-profile",
+        icon: UserCircle,
       },
     ];
   };
