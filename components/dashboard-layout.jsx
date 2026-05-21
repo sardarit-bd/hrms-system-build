@@ -27,6 +27,8 @@ import {
   UserCircle,
   CalendarDays,
   FolderKanban,
+  Clock,
+  User,
 } from "lucide-react";
 
 export function DashboardLayout({ children }) {
@@ -219,27 +221,45 @@ export function DashboardLayout({ children }) {
           href: "/workspace/leader/dashboard",
           icon: LayoutDashboard,
         },
-        { label: "Team", href: "/workspace/leader/team", icon: Users },
         {
-          label: "Attendance",
-          href: "/workspace/leader/attendance",
+          label: "My Team",
+          href: "/workspace/leader/my-team",
+          icon: Users,
+        },
+        {
+          label: "Team Attendance",
+          href: "/workspace/leader/team-attendance",
           icon: Calendar,
         },
-        { label: "Leave", href: "/workspace/leader/leave", icon: Briefcase },
         {
-          label: "Projects",
-          href: "/workspace/leader/projects",
+          label: "Leave Requests",
+          href: "/workspace/leader/team-leave-requests",
           icon: Briefcase,
         },
         {
-          label: "Documents",
-          href: "/workspace/leader/documents",
-          icon: FileText,
+          label: "Hour Logs Approval",
+          href: "/workspace/leader/hour-logs-approval",
+          icon: Clock,
         },
         {
-          label: "Settings",
-          href: "/workspace/employee/settings",
-          icon: Settings,
+          label: "Team Projects",
+          href: "/workspace/leader/team-projects",
+          icon: FolderKanban,
+        },
+        {
+          label: "Holidays",
+          href: "/workspace/leader/holidays",
+          icon: CalendarDays,
+        },
+        {
+          label: "Notifications",
+          href: "/workspace/leader/notifications",
+          icon: BellRing,
+        },
+        {
+          label: "My Profile",
+          href: "/workspace/leader/my-profile",
+          icon: User,
         },
       ];
     }
