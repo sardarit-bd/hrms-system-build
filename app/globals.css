@@ -137,3 +137,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+.active-menu-item {
+  position: relative;
+  z-index: 20;
+  margin-right: 0;
+}
+
+.active-menu-item::before,
+.active-menu-item::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  pointer-events: none;
+}
+
+.active-menu-item::before {
+  top: -38px;
+  border-bottom-right-radius: 38px;
+  box-shadow: 18px 18px 0 18px #FFFFFF;
+}
+
+.active-menu-item::after {
+  bottom: -38px;
+  border-top-right-radius: 38px;
+  box-shadow: 18px -18px 0 18px #FFFFFF;
+}

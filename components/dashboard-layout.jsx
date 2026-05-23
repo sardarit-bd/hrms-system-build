@@ -1,53 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import logo from "../public/logo.png";
 import Image from "next/image";
-import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  Briefcase,
-  FileText,
-  BarChart3,
-  CheckCircle,
-  Settings,
-  LogOut,
-  Bell,
-  Menu,
-  X,
-  ChevronDown,
-  UserCog,
-  DollarSign,
-  BellRing,
-  UserCircle,
-  CalendarDays,
-  FolderKanban,
-  Clock,
-  User,
-} from "lucide-react";
+import { LogOut, Bell, Menu, X, ChevronDown } from "lucide-react";
+import { getMenuItemsByRole } from "../lib/menu-items/menu-items";
 
 export function DashboardLayout({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
-        setSidebarOpen(true);
-      }
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setSidebarOpen(!mobile);
     };
 
     checkMobile();
     window.addEventListener("resize", checkMobile);
+
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
@@ -56,13 +36,12 @@ export function DashboardLayout({ children }) {
     router.push("/auth/login");
   };
 
-  // ✅ Loading state while user is not loaded
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background dark:bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-slate-950">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <p className="text-slate-500">Loading...</p>
         </div>
       </div>
     );
@@ -80,366 +59,170 @@ export function DashboardLayout({ children }) {
       manager: "Team Manager",
       employee: "Employee",
     };
+
     return labels[role] || role;
   };
 
-  // Get user display name safely
   const getUserDisplayName = () => {
     return (
       user?.name || user?.full_name || user?.email?.split("@")[0] || "User"
     );
   };
 
-  // Get user initial safely
   const getUserInitial = () => {
-    const name = getUserDisplayName();
-    return name.charAt(0).toUpperCase();
-  };
-
-  // Role based menu items
-  const getMenuItemsByRole = () => {
-    const role = user?.role;
-
-    // Super Admin / Admin Menu
-    if (role === "super_admin" || role === "admin") {
-      return [
-        {
-          label: "Dashboard",
-          href: "/workspace/admin/dashboard",
-          icon: LayoutDashboard,
-        },
-        { label: "Employees", href: "/workspace/admin/employees", icon: Users },
-        {
-          label: "Attendance",
-          href: "/workspace/admin/attendance",
-          icon: Calendar,
-        },
-        { label: "Leave", href: "/workspace/admin/leave", icon: Briefcase },
-        {
-          label: "Projects",
-          href: "/workspace/admin/projects",
-          icon: Briefcase,
-        },
-        {
-          label: "Documents",
-          href: "/workspace/admin/documents",
-          icon: FileText,
-        },
-        { label: "Reports", href: "/workspace/admin/reports", icon: BarChart3 },
-        {
-          label: "Approvals",
-          href: "/workspace/admin/approvals",
-          icon: CheckCircle,
-        },
-        {
-          label: "Settings",
-          href: "/workspace/employee/settings",
-          icon: Settings,
-        },
-        { label: "Profile", href: "/workspace/admin/profile", icon: UserCog },
-      ];
-    }
-
-    // HR Manager Menu
-    if (role === "hr_manager") {
-      return [
-        {
-          label: "Dashboard",
-          href: "/workspace/hr/dashboard",
-          icon: LayoutDashboard,
-        },
-        { label: "Employees", href: "/workspace/hr/employees", icon: Users },
-        {
-          label: "Attendance",
-          href: "/workspace/hr/attendance",
-          icon: Calendar,
-        },
-        { label: "Leave", href: "/workspace/hr/leave", icon: Briefcase },
-        { label: "Documents", href: "/workspace/hr/documents", icon: FileText },
-        { label: "Reports", href: "/workspace/hr/reports", icon: BarChart3 },
-        {
-          label: "Approvals",
-          href: "/workspace/hr/approvals",
-          icon: CheckCircle,
-        },
-        {
-          label: "Settings",
-          href: "/workspace/employee/settings",
-          icon: Settings,
-        },
-      ];
-    }
-
-    // Project Manager Menu
-    if (role === "project_manager" || role === "manager") {
-      return [
-        {
-          label: "Dashboard",
-          href: "/workspace/manager/dashboard",
-          icon: LayoutDashboard,
-        },
-        { label: "Team", href: "/workspace/manager/team", icon: Users },
-        {
-          label: "Attendance",
-          href: "/workspace/manager/attendance",
-          icon: Calendar,
-        },
-        { label: "Leave", href: "/workspace/manager/leave", icon: Briefcase },
-        {
-          label: "Projects",
-          href: "/workspace/manager/projects",
-          icon: Briefcase,
-        },
-        {
-          label: "Documents",
-          href: "/workspace/manager/documents",
-          icon: FileText,
-        },
-        {
-          label: "Reports",
-          href: "/workspace/manager/reports",
-          icon: BarChart3,
-        },
-        {
-          label: "Approvals",
-          href: "/workspace/manager/approvals",
-          icon: CheckCircle,
-        },
-        {
-          label: "Settings",
-          href: "/workspace/employee/settings",
-          icon: Settings,
-        },
-      ];
-    }
-
-    // Team Leader Menu
-    if (role === "team_leader" || role === "dept_head") {
-      return [
-        {
-          label: "Dashboard",
-          href: "/workspace/leader/dashboard",
-          icon: LayoutDashboard,
-        },
-        {
-          label: "My Team",
-          href: "/workspace/leader/my-team",
-          icon: Users,
-        },
-        {
-          label: "Team Attendance",
-          href: "/workspace/leader/team-attendance",
-          icon: Calendar,
-        },
-        {
-          label: "Leave Requests",
-          href: "/workspace/leader/team-leave-requests",
-          icon: Briefcase,
-        },
-        {
-          label: "Hour Logs Approval",
-          href: "/workspace/leader/hour-logs-approval",
-          icon: Clock,
-        },
-        {
-          label: "Team Projects",
-          href: "/workspace/leader/team-projects",
-          icon: FolderKanban,
-        },
-        {
-          label: "Holidays",
-          href: "/workspace/leader/holidays",
-          icon: CalendarDays,
-        },
-        {
-          label: "Notifications",
-          href: "/workspace/leader/notifications",
-          icon: BellRing,
-        },
-        {
-          label: "My Profile",
-          href: "/workspace/leader/my-profile",
-          icon: User,
-        },
-      ];
-    }
-
-    // Employee Menu (Default)
-    return [
-      {
-        label: "Dashboard",
-        href: "/workspace/employee/dashboard",
-        icon: LayoutDashboard,
-      },
-
-      {
-        label: "Attendance",
-        href: "/workspace/employee/my-attendance",
-        icon: Calendar,
-      },
-
-      {
-        label: "Leave",
-        href: "/workspace/employee/my-leave",
-        icon: Briefcase,
-      },
-
-      {
-        label: "My Projects",
-        href: "/workspace/employee/my-projects",
-        icon: FolderKanban,
-      },
-
-      {
-        label: "My Payroll",
-        href: "/workspace/employee/my-payroll",
-        icon: DollarSign,
-      },
-
-      {
-        label: "Notifications",
-        href: "/workspace/employee/notifications",
-        icon: BellRing,
-      },
-
-      {
-        label: "Holidays",
-        href: "/workspace/employee/holidays",
-        icon: CalendarDays,
-      },
-
-      {
-        label: "My Profile",
-        href: "/workspace/employee/my-profile",
-        icon: UserCircle,
-      },
-    ];
+    return getUserDisplayName().charAt(0).toUpperCase();
   };
 
   const menuItems = getMenuItemsByRole();
 
   return (
-    <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white">
       {/* Mobile Overlay */}
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative z-50 h-full w-64 bg-[#1d3a88] dark:bg-slate-900 border-r border-sidebar-border dark:border-slate-800 transition-all duration-300 flex flex-col ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        className={`fixed md:relative z-50 h-full w-64 shrink-0 overflow-visible rounded-r-[38px] bg-gradient-to-b from-[#1F377E] via-[#1a48c7] to-[#1F377E]  transition-transform duration-300 ease-out md:translate-x-0 md:transition-none ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
-        <div className="p-4 sm:p-5 border-b border-sidebar-border dark:border-slate-800 flex items-center justify-between">
-          <Image src={logo} alt="Logo" width={200} height={150} />
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden p-2 hover:bg-sidebar-accent dark:hover:bg-slate-800 rounded-md transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <div className="flex h-full flex-col">
+          {/* Logo */}
+          <div className="flex items-center justify-between px-6 py-7 shadow-2xl">
+            <Image src={logo} alt="Logo" width={170} height={90} priority />
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => isMobile && setSidebarOpen(false)}
-                className="text-white flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-md text-sidebar-accent-foreground dark:text-gray-300 dark:hover:bg-slate-800 transition-colors group min-h-[44px] sm:min-h-auto hover:bg-sidebar-accent"
-              >
-                <Icon
-                  size={20}
-                  className="flex-shrink-0 group-hover:text-sidebar-primary"
-                />
-                <span className="text-sm font-medium group-hover:text-sidebar-primary">
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-xl p-2 text-white transition hover:bg-white/10 md:hidden"
+            >
+              <X size={20} />
+            </button>
+          </div>
 
-        {/* User Info */}
-        <div className="p-3 sm:p-4 border-t border-sidebar-border dark:border-slate-800 space-y-2">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-md hover:bg-sidebar-accent dark:hover:bg-slate-800 transition-colors text-sidebar-accent-foreground dark:text-gray-300 min-h-[44px] sm:min-h-auto"
-          >
-            <div className="w-8 h-8 bg-sidebar-primary dark:bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-              {getUserInitial()}
-            </div>
-            <div className="text-left flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-sidebar-foreground dark:text-white">
-                {getUserDisplayName()}
-              </p>
-              <p className="text-xs truncate text-gray-300 dark:text-gray-400">
-                {getRoleLabel(user.role)}
-              </p>
-            </div>
-            <ChevronDown
-              size={16}
-              className={`transition-transform ${showUserMenu ? "rotate-180" : ""}`}
-            />
-          </button>
+          {/* Menu */}
+          <nav className="flex-1 space-y-3 py-4">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
 
-          {showUserMenu && (
-            <div className="space-y-1">
-              <Link
-                href="/workspace/employee/profile"
-                className="w-full block text-left px-3 sm:px-4 py-2 text-sm text-gray-300 hover:bg-sidebar-accent dark:hover:bg-slate-800 rounded transition-colors"
-              >
-                Profile Settings
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-3 sm:px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded transition-colors flex items-center gap-2"
-              >
-                <LogOut size={16} />
-                Logout
-              </button>
-            </div>
-          )}
+              const isActive =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => {
+                    if (isMobile) setSidebarOpen(false);
+                  }}
+                  className={`group relative ml-5 flex h-[58px] items-center gap-4 rounded-l-full px-6 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "active-menu-item bg-[#FFFFFF] text-[#0F52FF]"
+                      : "text-white/75 hover:text-white"
+                  }`}
+                >
+                  <Icon
+                    size={20}
+                    className={`transition-colors duration-200 ${
+                      isActive ? "text-[#0F52FF]" : "text-white/70"
+                    }`}
+                  />
+
+                  <span className="text-[15px] font-medium">
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User Section */}
+          <div className="px-4 pb-5">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex w-full items-center gap-3 rounded-3xl border border-white/10 bg-white/10 px-4 py-3 text-white backdrop-blur-md transition hover:bg-white/15"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-[#0F52FF]">
+                {getUserInitial()}
+              </div>
+
+              <div className="min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-semibold">
+                  {getUserDisplayName()}
+                </p>
+
+                <p className="truncate text-xs text-white/70">
+                  {getRoleLabel(user.role)}
+                </p>
+              </div>
+
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${
+                  showUserMenu ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {showUserMenu && (
+              <div className="mt-3 space-y-1 rounded-2xl border border-white/10 bg-white/10 p-2 backdrop-blur-md">
+                <Link
+                  href="/workspace/employee/profile"
+                  className="block rounded-xl px-3 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+                >
+                  Profile Settings
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-red-200 transition hover:bg-red-500/20"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden w-full">
-        {/* Top Navbar */}
-        <header className="bg-white dark:bg-slate-900 border-b border-border dark:border-slate-800 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground dark:text-white truncate">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden ml-8">
+        {/* Header */}
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
               Dashboard
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mt-1 truncate">
+
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {getRoleLabel(user.role)} Panel
             </p>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button className="p-2 sm:p-2.5 hover:bg-secondary dark:hover:bg-slate-800 rounded-md transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center">
-              <Bell size={20} className="text-foreground dark:text-white" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+
+          <div className="flex items-center gap-2">
+            <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl transition hover:bg-slate-100 dark:hover:bg-slate-800">
+              <Bell size={20} />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
             </button>
+
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-2 sm:p-2.5 hover:bg-secondary dark:hover:bg-slate-800 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl transition hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden"
             >
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </header>
 
-        {/* Content Area */}
+        {/* Page Content */}
         <div className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6 w-full max-w-full">{children}</div>
+          <div className="p-4 sm:p-6">{children}</div>
         </div>
       </main>
     </div>
