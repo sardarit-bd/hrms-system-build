@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw, Briefcase } from "lucide-react";
 import { gooeyToast } from "@/components/ui/goey-toaster";
-import ProjectsTable from "./components/ProjectsTable";
-import ProjectDetailsModal from "./components/ProjectDetailsModal";
-import EditProjectDialog from "./components/EditProjectDialog";
-import UpdateStatusDialog from "./components/UpdateStatusDialog";
-import MilestonesManager from "./components/MilestonesManager";
-import ProjectsSkeleton from "./components/ProjectsSkeleton";
+import MilestonesManager from "../../../../../components/workspace/pm/projects/MilestonesManager";
+import UpdateStatusDialog from "../../../../../components/workspace/pm/projects/UpdateStatusDialog";
+import EditProjectDialog from "../../../../../components/workspace/pm/projects/EditProjectDialog";
+import ProjectDetailsModal from "../../../../../components/workspace/pm/projects/ProjectDetailsModal";
+import ProjectsTable from "../../../../../components/workspace/pm/projects/ProjectsTable";
+import ProjectsSkeleton from "../../../../../components/workspace/pm/projects/ProjectsSkeleton";
+
 
 export default function ProjectManagerProjectsPage() {
   const { apiRequest } = useAuth();

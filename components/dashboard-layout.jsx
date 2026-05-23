@@ -73,7 +73,7 @@ export function DashboardLayout({ children }) {
     return getUserDisplayName().charAt(0).toUpperCase();
   };
 
-  const menuItems = getMenuItemsByRole();
+  const menuItems = getMenuItemsByRole(user?.role);
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
