@@ -87,13 +87,13 @@ export function DashboardLayout({ children }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative z-50 h-full w-64 shrink-0 overflow-visible rounded-r-[38px] bg-gradient-to-b from-[#1F377E] via-[#1a48c7] to-[#1F377E]  transition-transform duration-300 ease-out md:translate-x-0 md:transition-none ${
+        className={`fixed left-0 top-0 z-50 h-screen w-64 shrink-0 overflow-hidden rounded-r-[38px] bg-gradient-to-b from-[#1F377E] via-[#1a48c7] to-[#1F377E] transition-transform duration-300 ease-out md:relative md:translate-x-0 md:transition-none ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex items-center justify-between px-6 py-7 shadow-2xl">
+        <div className="flex h-full min-h-0 flex-col">
+          {/* Logo Fixed Top */}
+          <div className="flex shrink-0 items-center justify-between px-6 py-7 shadow-2xl">
             <Image src={logo} alt="Logo" width={170} height={90} priority />
 
             <button
@@ -104,36 +104,35 @@ export function DashboardLayout({ children }) {
             </button>
           </div>
 
-          {/* Menu */}
-          <nav className="flex-1 space-y-3 py-4">
-            {menuItems.map((item) => {
+          {/* Scrollable Menu */}
+          <nav className="sidebar-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden py-4 pr-1">
+            {menuItems.map((item, index) => {
               const Icon = item.icon;
 
               const isActive =
-                pathname === item.href ||
-                pathname.startsWith(`${item.href}/`);
+                pathname === item.href || pathname.startsWith(`${item.href}/`);
 
               return (
                 <Link
-                  key={item.href}
+                  key={`${item.href}-${index}`}
                   href={item.href}
                   onClick={() => {
                     if (isMobile) setSidebarOpen(false);
                   }}
-                  className={`group relative ml-5 flex h-[58px] items-center gap-4 rounded-l-full px-6 text-sm font-medium transition-all duration-200 ${
+                  className={`group relative ml-5 flex h-[58px] items-center gap-4 rounded-l-full px-6 mt-6 text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? "active-menu-item bg-[#FFFFFF] text-[#0F52FF]"
+                      ? "active-menu-item bg-white text-[#0F52FF]"
                       : "text-white/75 hover:text-white"
                   }`}
                 >
                   <Icon
                     size={20}
-                    className={`transition-colors duration-200 ${
+                    className={`shrink-0 transition-colors duration-200 ${
                       isActive ? "text-[#0F52FF]" : "text-white/70"
                     }`}
                   />
 
-                  <span className="text-[15px] font-medium">
+                  <span className="truncate text-[15px] font-medium">
                     {item.label}
                   </span>
                 </Link>
@@ -141,8 +140,8 @@ export function DashboardLayout({ children }) {
             })}
           </nav>
 
-          {/* User Section */}
-          <div className="px-4 pb-5">
+          {/* User Section Fixed Bottom */}
+          <div className="shrink-0 px-4 pb-5 pt-3">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex w-full items-center gap-3 rounded-3xl border border-white/10 bg-white/10 px-4 py-3 text-white backdrop-blur-md transition hover:bg-white/15"
@@ -163,7 +162,7 @@ export function DashboardLayout({ children }) {
 
               <ChevronDown
                 size={18}
-                className={`transition-transform duration-200 ${
+                className={`shrink-0 transition-transform duration-200 ${
                   showUserMenu ? "rotate-180" : ""
                 }`}
               />
@@ -192,9 +191,9 @@ export function DashboardLayout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden ml-8">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
               Dashboard
@@ -221,7 +220,7 @@ export function DashboardLayout({ children }) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto">
+        <div className="min-h-0 flex-1 overflow-auto">
           <div className="p-4 sm:p-6">{children}</div>
         </div>
       </main>
