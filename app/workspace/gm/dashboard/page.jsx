@@ -6,18 +6,19 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { gooeyToast } from "@/components/ui/goey-toaster";
-import NotificationsCard from "../../../../components/workspace/gm/NotificationsCard";
-import PendingGMApprovals from "../../../../components/workspace/gm/PendingGMApprovals";
-import UpcomingHolidays from "../../../../components/workspace/gm/UpcomingHolidays";
-import QuickActions from "../../../../components/workspace/gm/QuickActions";
-import PayrollSummary from "../../../../components/workspace/gm/PayrollSummary";
-import ProjectSummary from "../../../../components/workspace/gm/ProjectSummary";
-import DepartmentSummary from "../../../../components/workspace/gm/DepartmentSummary";
-import EmployeeSummary from "../../../../components/workspace/gm/EmployeeSummary";
-import CompanyOverview from "../../../../components/workspace/gm/CompanyOverview";
-import GMCharts from "../../../../components/workspace/gm/GMCharts";
-import GMStatsCards from "../../../../components/workspace/gm/GMStatsCards";
-import GMSkeleton from "../../../../components/workspace/gm/GMSkeleton";
+import NotificationsCard from "../../../../components/workspace/gm/dashboard/NotificationsCard";
+import PendingGMApprovals from "../../../../components/workspace/gm/dashboard/PendingGMApprovals";
+import QuickActions from "../../../../components/workspace/gm/dashboard/QuickActions";
+import PayrollSummary from "../../../../components/workspace/gm/dashboard/PayrollSummary";
+import UpcomingHolidays from "../../../../components/workspace/gm/dashboard/UpcomingHolidays";
+import ProjectSummary from "../../../../components/workspace/gm/dashboard/ProjectSummary";
+import DepartmentSummary from "../../../../components/workspace/gm/dashboard/DepartmentSummary";
+import EmployeeSummary from "../../../../components/workspace/gm/dashboard/EmployeeSummary";
+import CompanyOverview from "../../../../components/workspace/gm/dashboard/CompanyOverview";
+import GMCharts from "../../../../components/workspace/gm/dashboard/GMCharts";
+import GMStatsCards from "../../../../components/workspace/gm/dashboard/GMStatsCards";
+import GMSkeleton from "../../../../components/workspace/gm/dashboard/GMSkeleton";
+
 
 
 export default function GeneralManagerDashboard() {
