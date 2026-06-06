@@ -18,14 +18,14 @@ import EmployeeSummary from "../../../../../components/workspace/hr/dashboard/Em
 import HRCharts from "../../../../../components/workspace/hr/dashboard/HRCharts";
 import HRStatsCards from "../../../../../components/workspace/hr/dashboard/HRStatsCards";
 import HRSkeleton from "../../../../../components/workspace/hr/dashboard/HRSkeleton";
-
+import { ClockCalendarCard } from "../../../../../components/share/clock-calendar-card";
 
 export default function HRManagerDashboard() {
   const { apiRequest } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Data states
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -36,88 +36,97 @@ export default function HRManagerDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [upcomingHolidays, setUpcomingHolidays] = useState([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  const fetchDashboardData = useCallback(async (showRefreshToast = false) => {
-    try {
-      const [
-        usersRes,
-        deptRes,
-        leaveRes,
-        policiesRes,
-        rostersRes,
-        shiftsRes,
-        notificationsRes,
-        holidaysRes,
-      ] = await Promise.allSettled([
-        apiRequest("/users?per_page=500"),
-        apiRequest("/departments"),
-        apiRequest("/leave/requests?per_page=200"),
-        apiRequest("/attendance/policies"),
-        apiRequest("/roster?per_page=200"),
-        apiRequest("/shifts"),
-        apiRequest("/notifications?per_page=20"),
-        apiRequest("/holidays/upcoming?limit=5"),
-      ]);
+  const fetchDashboardData = useCallback(
+    async (showRefreshToast = false) => {
+      try {
+        const [
+          usersRes,
+          deptRes,
+          leaveRes,
+          policiesRes,
+          rostersRes,
+          shiftsRes,
+          notificationsRes,
+          holidaysRes,
+        ] = await Promise.allSettled([
+          apiRequest("/users?per_page=500"),
+          apiRequest("/departments"),
+          apiRequest("/leave/requests?per_page=200"),
+          apiRequest("/attendance/policies"),
+          apiRequest("/roster?per_page=200"),
+          apiRequest("/shifts"),
+          apiRequest("/notifications?per_page=20"),
+          apiRequest("/holidays/upcoming?limit=5"),
+        ]);
 
-      // Process Users
-      if (usersRes.status === "fulfilled" && usersRes.value?.data) {
-        setUsers(usersRes.value.data);
-      }
+        // Process Users
+        if (usersRes.status === "fulfilled" && usersRes.value?.data) {
+          setUsers(usersRes.value.data);
+        }
 
-      // Process Departments
-      if (deptRes.status === "fulfilled" && deptRes.value?.data) {
-        setDepartments(deptRes.value.data);
-      }
+        // Process Departments
+        if (deptRes.status === "fulfilled" && deptRes.value?.data) {
+          setDepartments(deptRes.value.data);
+        }
 
-      // Process Leave Requests
-      if (leaveRes.status === "fulfilled" && leaveRes.value?.data) {
-        setLeaveRequests(leaveRes.value.data);
-      }
+        // Process Leave Requests
+        if (leaveRes.status === "fulfilled" && leaveRes.value?.data) {
+          setLeaveRequests(leaveRes.value.data);
+        }
 
-      // Process Attendance Policies
-      if (policiesRes.status === "fulfilled" && policiesRes.value?.data) {
-        setAttendancePolicies(policiesRes.value.data);
-      }
+        // Process Attendance Policies
+        if (policiesRes.status === "fulfilled" && policiesRes.value?.data) {
+          setAttendancePolicies(policiesRes.value.data);
+        }
 
-      // Process Rosters
-      if (rostersRes.status === "fulfilled" && rostersRes.value?.data) {
-        setRosters(rostersRes.value.data);
-      }
+        // Process Rosters
+        if (rostersRes.status === "fulfilled" && rostersRes.value?.data) {
+          setRosters(rostersRes.value.data);
+        }
 
-      // Process Shifts
-      if (shiftsRes.status === "fulfilled" && shiftsRes.value?.data) {
-        setShifts(shiftsRes.value.data);
-      }
+        // Process Shifts
+        if (shiftsRes.status === "fulfilled" && shiftsRes.value?.data) {
+          setShifts(shiftsRes.value.data);
+        }
 
-      // Process Notifications
-      if (notificationsRes.status === "fulfilled" && notificationsRes.value?.data) {
-        setNotifications(notificationsRes.value.data);
-        // Get unread count
-        const unread = notificationsRes.value.data.filter(n => !n.is_read).length;
-        setUnreadCount(unread);
-      }
+        // Process Notifications
+        if (
+          notificationsRes.status === "fulfilled" &&
+          notificationsRes.value?.data
+        ) {
+          setNotifications(notificationsRes.value.data);
+          // Get unread count
+          const unread = notificationsRes.value.data.filter(
+            (n) => !n.is_read,
+          ).length;
+          setUnreadCount(unread);
+        }
 
-      // Process Upcoming Holidays
-      if (holidaysRes.status === "fulfilled" && holidaysRes.value?.data) {
-        setUpcomingHolidays(holidaysRes.value.data);
-      }
+        // Process Upcoming Holidays
+        if (holidaysRes.status === "fulfilled" && holidaysRes.value?.data) {
+          setUpcomingHolidays(holidaysRes.value.data);
+        }
 
-      if (showRefreshToast) {
-        gooeyToast.success("Dashboard Refreshed", {
-          description: "HR dashboard data has been updated.",
-          duration: 2000,
+        if (showRefreshToast) {
+          gooeyToast.success("Dashboard Refreshed", {
+            description: "HR dashboard data has been updated.",
+            duration: 2000,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        gooeyToast.error("Failed to Load Dashboard", {
+          description: error.message,
         });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
-      gooeyToast.error("Failed to Load Dashboard", {
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [apiRequest]);
+    },
+    [apiRequest],
+  );
 
   useEffect(() => {
     fetchDashboardData();
@@ -131,18 +140,28 @@ export default function HRManagerDashboard() {
   // Calculate stats
   const stats = {
     totalEmployees: users.length,
-    activeEmployees: users.filter(u => u.status === "active").length,
-    inactiveEmployees: users.filter(u => u.status === "inactive").length,
-    pendingApprovals: users.filter(u => u.status === "pending").length,
+    activeEmployees: users.filter((u) => u.status === "active").length,
+    inactiveEmployees: users.filter((u) => u.status === "inactive").length,
+    pendingApprovals: users.filter((u) => u.status === "pending").length,
     totalDepartments: departments.length,
-    pendingLeaveRequests: leaveRequests.filter(l => l.status === "pending_pm" || l.status === "pending_gm").length,
+    pendingLeaveRequests: leaveRequests.filter(
+      (l) => l.status === "pending_pm" || l.status === "pending_gm",
+    ).length,
     totalLeaveRequests: leaveRequests.length,
     totalPolicies: attendancePolicies.length,
-    activePolicies: attendancePolicies.filter(p => p.is_active).length,
+    activePolicies: attendancePolicies.filter((p) => p.is_active).length,
     totalRosters: rosters.length,
-    activeRosters: rosters.filter(r => r.is_active).length,
+    activeRosters: rosters.filter((r) => r.is_active).length,
     totalShifts: shifts.length,
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   if (loading) {
     return <HRSkeleton />;
@@ -151,6 +170,9 @@ export default function HRManagerDashboard() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-950/50">
+        <section className="p-4 sm:p-6 pb-0">
+          <ClockCalendarCard currentTime={currentTime} />
+        </section>
         <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -170,7 +192,10 @@ export default function HRManagerDashboard() {
                 disabled={refreshing}
                 className="gap-1 sm:gap-2 cursor-pointer text-xs sm:text-sm"
               >
-                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                <RefreshCw
+                  size={14}
+                  className={refreshing ? "animate-spin" : ""}
+                />
                 {refreshing ? "Refreshing..." : "Refresh"}
               </Button>
             </div>
@@ -180,10 +205,10 @@ export default function HRManagerDashboard() {
           <HRStatsCards stats={stats} />
 
           {/* Charts Row */}
-          <HRCharts 
-            users={users} 
-            departments={departments} 
-            leaveRequests={leaveRequests} 
+          <HRCharts
+            users={users}
+            departments={departments}
+            leaveRequests={leaveRequests}
             shifts={shifts}
           />
 
@@ -200,15 +225,17 @@ export default function HRManagerDashboard() {
             {/* Right Column */}
             <div className="space-y-4 sm:space-y-6">
               <QuickActions />
-              <PendingApprovalsCard 
-                pendingUsers={users.filter(u => u.status === "pending")}
-                pendingLeaves={leaveRequests.filter(l => l.status === "pending_pm" || l.status === "pending_gm")}
+              <PendingApprovalsCard
+                pendingUsers={users.filter((u) => u.status === "pending")}
+                pendingLeaves={leaveRequests.filter(
+                  (l) => l.status === "pending_pm" || l.status === "pending_gm",
+                )}
                 onRefresh={fetchDashboardData}
               />
               <LeaveRequestsSummary leaveRequests={leaveRequests} />
               <UpcomingHolidaysCard holidays={upcomingHolidays} />
               <NotificationsCard
-                notifications={notifications.slice(0, 5)} 
+                notifications={notifications.slice(0, 5)}
                 unreadCount={unreadCount}
                 onRefresh={fetchDashboardData}
               />
