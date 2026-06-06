@@ -1,264 +1,324 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/lib/auth-context';
-import { ProtectedRoute } from '@/components/protected-route';
-import { DashboardLayout } from '@/components/dashboard-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { Clock, Calendar } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Info } from "lucide-react";
+import { gooeyToast } from "@/components/ui/goey-toaster";
+import PolicyHistoryModal from "../../../../../components/workspace/hr/attendance/PolicyHistoryModal";
+import RosterHistoryModal from "../../../../../components/workspace/hr/attendance/RosterHistoryModal";
+import EmployeeDetailsModal from "../../../../../components/workspace/hr/attendance/EmployeeDetailsModal";
+import AssignPolicyDialog from "../../../../../components/workspace/hr/attendance/AssignPolicyDialog";
+import AssignRosterDialog from "../../../../../components/workspace/hr/attendance/AssignRosterDialog";
+import AttendancePolicies from "../../../../../components/workspace/hr/attendance/AttendancePolicies";
+import ShiftInfo from "../../../../../components/workspace/hr/attendance/ShiftInfo";
+import RosterAssignments from "../../../../../components/workspace/hr/attendance/RosterAssignments";
+import AttendanceFilters from "../../../../../components/workspace/hr/attendance/AttendanceFilters";
+import AttendanceStatsCards from "../../../../../components/workspace/hr/attendance/AttendanceStatsCards";
+import AttendanceSkeleton from "../../../../../components/workspace/hr/attendance/AttendanceSkeleton";
 
-function AttendanceContent() {
-  const { user } = useAuth();
-  const [checkedIn, setCheckedIn] = useState(false);
-  const [checkInTime, setCheckInTime] = useState(null);
+export default function HRAttendancePage() {
+  const { apiRequest } = useAuth();
+  
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Data states
+  const [rosters, setRosters] = useState([]);
+  const [shifts, setShifts] = useState([]);
+  const [fixedShifts, setFixedShifts] = useState([]);
+  const [rotatingShifts, setRotatingShifts] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  
+  // Dialog states
+  const [assignRosterOpen, setAssignRosterOpen] = useState(false);
+  const [assignPolicyOpen, setAssignPolicyOpen] = useState(false);
+  const [employeeDetailsOpen, setEmployeeDetailsOpen] = useState(false);
+  const [rosterHistoryOpen, setRosterHistoryOpen] = useState(false);
+  const [policyHistoryOpen, setPolicyHistoryOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedRoster, setSelectedRoster] = useState(null);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [shiftFilter, setShiftFilter] = useState("");
+  const [employeeFilter, setEmployeeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [activeTab, setActiveTab] = useState("rosters");
 
-  const handleCheckIn = () => {
-    const now = new Date().toLocaleTimeString();
-    setCheckInTime(now);
-    setCheckedIn(true);
+  const fetchData = useCallback(async (showRefreshToast = false) => {
+    try {
+      const [rostersRes, shiftsRes, fixedShiftsRes, rotatingShiftsRes, policiesRes, employeesRes] = await Promise.allSettled([
+        apiRequest("/roster?per_page=200"),
+        apiRequest("/shifts"),
+        apiRequest("/shifts/list/fixed"),
+        apiRequest("/shifts/list/rotating"),
+        apiRequest("/attendance/policies"),
+        apiRequest("/users?per_page=200"),
+      ]);
+
+      if (rostersRes.status === "fulfilled" && rostersRes.value?.data) {
+        setRosters(rostersRes.value.data);
+      }
+      if (shiftsRes.status === "fulfilled" && shiftsRes.value?.data) {
+        setShifts(shiftsRes.value.data);
+      }
+      if (fixedShiftsRes.status === "fulfilled" && fixedShiftsRes.value?.data) {
+        setFixedShifts(fixedShiftsRes.value.data);
+      }
+      if (rotatingShiftsRes.status === "fulfilled" && rotatingShiftsRes.value?.data) {
+        setRotatingShifts(rotatingShiftsRes.value.data);
+      }
+      if (policiesRes.status === "fulfilled" && policiesRes.value?.data) {
+        setPolicies(policiesRes.value.data);
+      }
+      if (employeesRes.status === "fulfilled" && employeesRes.value?.data) {
+        setEmployees(employeesRes.value.data);
+      }
+
+      if (showRefreshToast) {
+        gooeyToast.success("Attendance Data Refreshed", {
+          description: "Attendance data has been updated.",
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch attendance data:", error);
+      gooeyToast.error("Failed to Load Data", {
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [apiRequest]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchData(true);
   };
 
-  const handleCheckOut = () => {
-    setCheckedIn(false);
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setShiftFilter("");
+    setEmployeeFilter("");
+    setStatusFilter("");
   };
 
-  const attendanceRecords = [
-    {
-      date: new Date().toLocaleDateString(),
-      checkIn: '09:00 AM',
-      checkOut: '05:30 PM',
-      duration: '8h 30m',
-      status: 'Present',
-    },
-    {
-      date: new Date(Date.now() - 86400000).toLocaleDateString(),
-      checkIn: '09:15 AM',
-      checkOut: '05:45 PM',
-      duration: '8h 30m',
-      status: 'Present',
-    },
-    {
-      date: new Date(Date.now() - 172800000).toLocaleDateString(),
-      checkIn: '-',
-      checkOut: '-',
-      duration: '-',
-      status: 'Leave',
-    },
-  ];
+  const handleViewEmployeeDetails = (employee) => {
+    setSelectedEmployee(employee);
+    setEmployeeDetailsOpen(true);
+  };
+
+  const handleViewRosterHistory = async (employee) => {
+    try {
+      const response = await apiRequest(`/roster/user/${employee.id}/history`);
+      setSelectedEmployee(employee);
+      setSelectedRoster(response.data);
+      setRosterHistoryOpen(true);
+    } catch (error) {
+      gooeyToast.error("Failed to Load Roster History", {
+        description: error.message,
+      });
+    }
+  };
+
+  const handleViewPolicyHistory = async (employee) => {
+    try {
+      const response = await apiRequest(`/attendance/policies/user/${employee.id}/history`);
+      setSelectedEmployee(employee);
+      setSelectedPolicy(response.data);
+      setPolicyHistoryOpen(true);
+    } catch (error) {
+      gooeyToast.error("Failed to Load Policy History", {
+        description: error.message,
+      });
+    }
+  };
+
+  // Filter rosters
+  const filteredRosters = rosters.filter(roster => {
+    if (searchTerm && !roster.user?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (shiftFilter && roster.shift?.id.toString() !== shiftFilter) return false;
+    if (employeeFilter && roster.user?.id.toString() !== employeeFilter) return false;
+    if (statusFilter && statusFilter === "active" && !roster.is_active) return false;
+    if (statusFilter === "inactive" && roster.is_active) return false;
+    return true;
+  });
+
+  const stats = {
+    totalRosters: rosters.length,
+    activeRosters: rosters.filter(r => r.is_active).length,
+    totalShifts: shifts.length,
+    totalPolicies: policies.length,
+    activePolicies: policies.filter(p => p.is_active).length,
+  };
+
+  if (loading) {
+    return <AttendanceSkeleton />;
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground dark:text-white">
-            Attendance
-          </h1>
-          <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
-            Track your attendance and work hours
-          </p>
-        </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950/50">
+        <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+                Attendance Management
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                Manage rosters, shifts, and attendance policies
+              </p>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="gap-1 sm:gap-2 cursor-pointer text-xs sm:text-sm"
+              >
+                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
+          </div>
 
-        {/* Check-in/Check-out Card */}
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
-              <div className="flex-1 w-full">
-                <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                  Current Status
+          {/* Info Alert */}
+          <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <Info size={16} className="sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-300">
+                  Live Attendance Records Information
                 </p>
-                <p className="text-2xl sm:text-3xl font-bold text-primary dark:text-white mb-1">
-                  {checkedIn ? '✓ Checked In' : 'Not Checked In'}
+                <p className="text-[10px] sm:text-xs text-blue-700 dark:text-blue-400 mt-0.5 sm:mt-1">
+                  Daily check-in/out records API is not available yet. Currently connected: 
+                  Rosters, Shifts, and Attendance policies.
                 </p>
-                {checkInTime && (
-                  <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400">
-                    Since {checkInTime}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button
-                  variant={checkedIn ? 'secondary' : 'primary'}
-                  onClick={handleCheckIn}
-                  disabled={checkedIn}
-                  className="flex-1 sm:flex-auto"
-                >
-                  Check In
-                </Button>
-                <Button
-                  variant={checkedIn ? 'danger' : 'secondary'}
-                  onClick={handleCheckOut}
-                  disabled={!checkedIn}
-                  className="flex-1 sm:flex-auto"
-                >
-                  Check Out
-                </Button>
+                <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-500 mt-1 sm:mt-2">
+                  ✅ You can manage employee rosters, shift assignments, and attendance policies.
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                This Month
-              </p>
-              <p className="text-xl sm:text-3xl font-bold text-primary dark:text-white">
-                20
-              </p>
-              <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1 sm:mt-2">
-                Days Present
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                Attendance Rate
-              </p>
-              <p className="text-xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
-                91%
-              </p>
-              <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1 sm:mt-2">
-                This Month
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                Total Hours
-              </p>
-              <p className="text-xl sm:text-3xl font-bold text-accent dark:text-blue-400">
-                164h
-              </p>
-              <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1 sm:mt-2">
-                Worked
-              </p>
-            </CardContent>
-          </Card>
+          {/* Stats Cards */}
+          <AttendanceStatsCards stats={stats} />
+
+          {/* Filters */}
+          {/* <AttendanceFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            shiftFilter={shiftFilter}
+            setShiftFilter={setShiftFilter}
+            employeeFilter={employeeFilter}
+            setEmployeeFilter={setEmployeeFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            shifts={shifts}
+            employees={employees}
+            onReset={handleResetFilters}
+          /> */}
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+            <div className="overflow-x-auto">
+              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 gap-1">
+                <TabsTrigger value="rosters" className="cursor-pointer text-xs sm:text-sm px-3 sm:px-4">
+                  Roster Assignments
+                </TabsTrigger>
+                <TabsTrigger value="shifts" className="cursor-pointer text-xs sm:text-sm px-3 sm:px-4">
+                  Shifts
+                </TabsTrigger>
+                <TabsTrigger value="policies" className="cursor-pointer text-xs sm:text-sm px-3 sm:px-4">
+                  Attendance Policies
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="rosters" className="space-y-4 sm:space-y-6">
+              <RosterAssignments
+                rosters={filteredRosters}
+                shifts={shifts}
+                employees={employees}
+                onViewEmployeeDetails={handleViewEmployeeDetails}
+                onViewRosterHistory={handleViewRosterHistory}
+                onAssignRoster={() => setAssignRosterOpen(true)}
+              />
+            </TabsContent>
+
+            <TabsContent value="shifts" className="space-y-4 sm:space-y-6">
+              <ShiftInfo
+                shifts={shifts}
+                fixedShifts={fixedShifts}
+                rotatingShifts={rotatingShifts}
+              />
+            </TabsContent>
+
+            <TabsContent value="policies" className="space-y-4 sm:space-y-6">
+              <AttendancePolicies
+                policies={policies}
+                employees={employees}
+                onViewEmployeeDetails={handleViewEmployeeDetails}
+                onViewPolicyHistory={handleViewPolicyHistory}
+                onAssignPolicy={() => setAssignPolicyOpen(true)}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
-
-        {/* Attendance Records */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Calendar size={20} />
-              Recent Attendance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 sm:p-6">
-            {/* Desktop Table */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="border-b border-border dark:border-slate-700">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground dark:text-white text-sm">
-                      Date
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground dark:text-white text-sm">
-                      Check In
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground dark:text-white text-sm">
-                      Check Out
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground dark:text-white text-sm">
-                      Duration
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground dark:text-white text-sm">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendanceRecords.map((record, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-b border-border dark:border-slate-700 hover:bg-secondary dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <td className="py-3 px-4 text-sm text-foreground dark:text-white">
-                        {record.date}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground dark:text-gray-400">
-                        {record.checkIn}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground dark:text-gray-400">
-                        {record.checkOut}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground dark:text-gray-400">
-                        {record.duration}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                          record.status === 'Present'
-                            ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
-                            : 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
-                        }`}>
-                          {record.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="sm:hidden space-y-3 p-4">
-              {attendanceRecords.map((record, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 bg-secondary dark:bg-slate-800 rounded-lg border border-border dark:border-slate-700"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="font-semibold text-foreground dark:text-white text-sm">
-                      {record.date}
-                    </span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      record.status === 'Present'
-                        ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
-                        : 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
-                    }`}>
-                      {record.status}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground dark:text-gray-400">Check In:</span>
-                      <span className="text-foreground dark:text-white font-medium">
-                        {record.checkIn}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground dark:text-gray-400">Check Out:</span>
-                      <span className="text-foreground dark:text-white font-medium">
-                        {record.checkOut}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs pt-2 border-t border-border dark:border-slate-600">
-                      <span className="text-muted-foreground dark:text-gray-400">Duration:</span>
-                      <span className="text-foreground dark:text-white font-medium">
-                        {record.duration}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
-    </DashboardLayout>
-  );
-}
 
-export default function AttendancePage() {
-  return (
-    <ProtectedRoute>
-      <AttendanceContent />
-    </ProtectedRoute>
+      {/* Assign Roster Dialog */}
+      <AssignRosterDialog
+        open={assignRosterOpen}
+        onOpenChange={setAssignRosterOpen}
+        shifts={shifts}
+        employees={employees}
+        onSuccess={fetchData}
+      />
+
+      {/* Assign Policy Dialog */}
+      <AssignPolicyDialog
+        open={assignPolicyOpen}
+        onOpenChange={setAssignPolicyOpen}
+        policies={policies}
+        employees={employees}
+        onSuccess={fetchData}
+      />
+
+      {/* Employee Details Modal */}
+      <EmployeeDetailsModal
+        open={employeeDetailsOpen}
+        onOpenChange={setEmployeeDetailsOpen}
+        employee={selectedEmployee}
+      />
+
+      {/* Roster History Modal */}
+      <RosterHistoryModal
+        open={rosterHistoryOpen}
+        onOpenChange={setRosterHistoryOpen}
+        employee={selectedEmployee}
+        history={selectedRoster}
+      />
+
+      {/* Policy History Modal */}
+      <PolicyHistoryModal
+        open={policyHistoryOpen}
+        onOpenChange={setPolicyHistoryOpen}
+        employee={selectedEmployee}
+        history={selectedPolicy}
+      />
+    </DashboardLayout>
   );
 }

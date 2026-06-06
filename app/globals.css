@@ -148,7 +148,7 @@
 .active-menu-item::after {
   content: "";
   position: absolute;
-  right: 0;
+  right: -4px;
   width: 38px;
   height: 38px;
   background: transparent;
@@ -165,4 +165,24 @@
   bottom: -38px;
   border-top-right-radius: 38px;
   box-shadow: 18px -18px 0 18px #FFFFFF;
+}
+
+/* ===== Sidebar Scroll Hidden ===== */
+
+.sidebar-scroll {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE & old Edge */
+
+  scroll-behavior: smooth;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Optional Smooth Touch Scroll */
+.sidebar-scroll {
+  -webkit-overflow-scrolling: touch;
 }
