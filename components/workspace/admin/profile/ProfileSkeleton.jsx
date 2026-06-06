@@ -1,5 +1,5 @@
-import { DashboardLayout } from "../../../../../components/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardLayout } from "../../../dashboard-layout";
 
 export function ProfileSkeleton() {
     return (
