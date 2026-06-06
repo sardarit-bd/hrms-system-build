@@ -49,7 +49,7 @@ export function ClockCalendarCard({ currentTime = new Date() }) {
 
   return (
     <div className="overflow-hidden rounded-3xl bg-slate-900 shadow-lg">
-      <div className="bg-[url('/dashboard-clock-bg.png')] bg-cover bg-center">
+      <div className="bg-[url('/dashboard-clock.png')] bg-cover bg-center">
         <div className="grid min-h-[360px] grid-cols-1 bg-slate-950/70 text-white lg:grid-cols-2">
           <div className="flex flex-col items-center justify-center border-b border-white/20 p-8 lg:border-b-0 lg:border-r">
             <div className="relative flex h-40 w-40 items-center justify-center rounded-full border-4 border-white/20">
