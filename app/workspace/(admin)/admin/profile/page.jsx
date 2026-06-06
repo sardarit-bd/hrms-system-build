@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/dashboard-layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,9 +25,12 @@ import {
   Edit2,
 } from "lucide-react";
 import { gooeyToast } from "@/components/ui/goey-toaster";
-import ChangePasswordDialog from "./ChangePasswordDialog";
+import ChangePasswordDialog from "../../../../../components/workspace/admin/profile/ChangePasswordDialog";
 import { ProfileHeader } from "../../../../../components/workspace/admin/profile/ProfileHeader";
-import { ProfileSkeleton } from "./ProfileSkeleton";
+import { ProfileSkeleton } from "../../../../../components/workspace/admin/profile/ProfileSkeleton";
+import { DashboardLayout } from "../../../../../components/dashboard-layout";
+
+
 
 // Validation Schema
 const profileSchema = z.object({
