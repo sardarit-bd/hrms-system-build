@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +42,11 @@ import {
 } from "lucide-react";
 import { gooeyToast } from "@/components/ui/goey-toaster";
 import Link from "next/link";
+import { EmployeeDetailsSkeleton } from "../../../../../../components/workspace/admin/employees/EmployeeDetailsSkeleton";
+import { InfoCard } from "../../../../../../components/workspace/admin/employees/InfoCard";
+import { ActionCard } from "../../../../../../components/workspace/admin/employees/ActionCard";
+import { CardContent } from "../../../../../../components/ui/card";
+import { ReviewItem } from "../../../../../../components/workspace/admin/employees/ReviewItem";
 
 const STATUS_COLORS = {
   active:
@@ -56,10 +61,10 @@ const ROLE_LABELS = {
   super_admin: "Super Admin",
   admin: "Admin",
   general_manager: "General Manager",
+  hr_manager: "HR Manager",
   project_manager: "Project Manager",
   team_leader: "Team Leader",
   employee: "Employee",
-  hr_manager: "HR Manager",
 };
 
 export default function EmployeeDetailsPage() {
@@ -301,7 +306,15 @@ export default function EmployeeDetailsPage() {
 
   const isPending =
     employee.status === "inactive" || employee.status === "pending";
-  const getDepartmentName = (departmentId) => {
+  const getDepartmentName = (employee) => {
+    if (employee?.department?.name) return employee.department.name;
+    if (employee?.department_name) return employee.department_name;
+
+    const departmentId =
+      employee?.department_id ||
+      employee?.department?.id ||
+      employee?.department;
+
     const department = departments.find(
       (dept) => Number(dept.id) === Number(departmentId),
     );
@@ -391,11 +404,7 @@ export default function EmployeeDetailsPage() {
               <InfoCard
                 icon={Building2}
                 label="Department"
-                value={
-                  employee.department?.name ||
-                  employee.department ||
-                  getDepartmentName(employee.department_id)
-                }
+                value={getDepartmentName(employee)}
               />
               <InfoCard
                 icon={Briefcase}
@@ -776,85 +785,6 @@ export default function EmployeeDetailsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
-  );
-}
-
-// Helper Components
-function InfoCard({ icon: Icon, label, value }) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-            <Icon size={16} className="text-gray-600 dark:text-gray-400" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {value}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ActionCard({ title, description, buttonText, onClick, icon: Icon }) {
-  return (
-    <Card>
-      <CardContent className="p-4 flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-            <Icon size={16} className="text-gray-600 dark:text-gray-400" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {title}
-            </p>
-            <p className="text-xs text-gray-500">{description}</p>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onClick}
-          className="cursor-pointer"
-        >
-          {buttonText}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ReviewItem({ label, value }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm text-gray-900 dark:text-white">{value}</p>
-    </div>
-  );
-}
-
-function EmployeeDetailsSkeleton() {
-  return (
-    <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10 rounded-full" />
-          <div>
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-4 w-32 mt-1" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-lg" />
-          ))}
-        </div>
-      </div>
     </DashboardLayout>
   );
 }
