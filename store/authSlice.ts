@@ -1,9 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const getStoredToken = () => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token");
+};
+
+const getStoredUser = () => {
+  if (typeof window === "undefined") return null;
+  const user = localStorage.getItem("user");
+  return user ? JSON.parse(user) : null;
+};
+
 const initialState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
+  user: getStoredUser(),
+  token: getStoredToken(),
+  isAuthenticated: !!getStoredToken(),
 };
 
 const authSlice = createSlice({
@@ -14,17 +25,25 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", action.payload.token);
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
+      }
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     },
   },
 });
 
-// Export the actions so components can trigger them
 export const { loginSuccess, logout } = authSlice.actions;
 
-// Export the reducer to be used in the store
 export default authSlice.reducer;

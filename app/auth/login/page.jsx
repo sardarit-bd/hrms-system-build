@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import Image from "next/image";
 import Link from "next/link";
-
 import logo from "../../../public/logo.png";
-
 import { cn } from "@/lib/utils";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { gooeyToast } from "@/components/ui/goey-toaster";
 import { HexagonPattern } from "@/components/ui/hexagon-pattern";
 import { BorderBeam } from "@/components/ui/border-beam";
-
+import { useLoginMutation } from "../../../store/modules/authApi";
+import { useSelector, useDispatch } from "react-redux";
 import {
   Eye,
   EyeOff,
@@ -27,65 +25,12 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-
-const DEMO_CREDENTIALS =
-  process.env.NODE_ENV === "development"
-    ? [
-        {
-          email: "superadmin@company.com",
-          password: "password",
-          role: "super_admin",
-          name: "Super Admin",
-        },
-        {
-          email: "admin@hrms.com",
-          password: "admin123",
-          role: "admin",
-          name: "Admin User",
-        },
-        {
-          email: "hr@hrms.com",
-          password: "hr123",
-          role: "hr_manager",
-          name: "HR Manager",
-        },
-        {
-          email: "head@hrms.com",
-          password: "head123",
-          role: "dept_head",
-          name: "Department Head",
-        },
-        {
-          email: "manager@hrms.com",
-          password: "manager123",
-          role: "manager",
-          name: "Team Manager",
-        },
-        {
-          email: "employee@hrms.com",
-          password: "emp123",
-          role: "employee",
-          name: "Employee",
-        },
-      ]
-    : [];
-
-const ROLE_ROUTES = {
-  super_admin: "/workspace/admin/dashboard",
-  admin: "/workspace/admin/dashboard",
-  general_manager: "/workspace/gm/dashboard",
-  project_manager: "/workspace/manager/dashboard",
-  team_leader: "/workspace/leader/dashboard",
-  employee: "/workspace/employee/dashboard",
-  hr_manager: "/workspace/hr/dashboard",
-  manager: "/workspace/manager/dashboard",
-  dept_head: "/workspace/leader/dashboard",
-};
+import { ROLE_ROUTES } from "../../../lib/_mock/redirect_point";
 
 export default function LoginPage() {
+  const dispatch = useDispatch();
   const router = useRouter();
-  const { login } = useAuth();
-
+  const [login, { isLoading }] = useLoginMutation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -94,10 +39,18 @@ export default function LoginPage() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [doorOpen, setDoorOpen] = useState(false);
+  const { user } = useSelector((state) => state.auth);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsMounted(true);
   }, []);
+  useLayoutEffect(() => {
+    if (user) {
+      const destination =
+        ROLE_ROUTES[user.role] || "/workspace/admin/dashboard";
+      router.replace(destination); // replace prevents user from going "back" to login
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -111,61 +64,37 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-
     try {
-      const result = await login(email, password);
+      const result = await login({ email, password }).unwrap();
 
-      if (result?.success && result?.user) {
-        const userRole = result.user.role;
-        const redirectPath =
-          ROLE_ROUTES[userRole] || "/workspace/employee/dashboard";
+      // Adjust based on your actual API response structure
+      const token = result?.data?.token || result?.token;
+      const user = result?.data?.user || result?.user;
 
-        gooeyToast.success("Login Successful!", {
-          description: `Welcome back, ${
-            result.user.full_name || result.user.name || "User"
-          }!`,
-          duration: 1800,
+      if (token && user) {
+        // This dispatches to Redux AND saves to localStorage
+        dispatch(loginSuccess({ token, user }));
+
+        const role = user.role;
+        const destination = ROLE_ROUTES[role] || "/workspace/admin/dashboard";
+        router.push(destination);
+      } else {
+        gooeyToast.error("Login Failed", {
+          description: "Invalid response from server",
         });
-
-        setDoorOpen(true);
-
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 850);
-
-        return;
       }
-
-      setLoading(false);
     } catch (error) {
-      console.error("Login error:", error);
-
       gooeyToast.error("Login Failed", {
-        description: error?.message || "Invalid email or password.",
-        duration: 3000,
+        description:
+          error?.data?.message || error.message || "Invalid credentials",
       });
-
+    } finally {
       setLoading(false);
     }
   };
 
-  const setDemoCredentials = (credentials) => {
-    setEmail(credentials.email);
-    setPassword(credentials.password);
-
-    gooeyToast.info("Demo Credentials Loaded", {
-      description: `You can now login as ${credentials.role.replace(
-        /_/g,
-        " ",
-      )}`,
-      duration: 2000,
-    });
-  };
-
-  const showDemoCredentials = isMounted && DEMO_CREDENTIALS.length > 0;
-
   return (
-    <div className="min-h-screen flex overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen flex overflow-hidden bg-linear-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Left Panel */}
       <div
         className={cn(
@@ -175,7 +104,7 @@ export default function LoginPage() {
       >
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               Welcome Back
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">
@@ -292,7 +221,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading || doorOpen}
-                  className="w-full h-11 mt-2 cursor-pointer bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent transition-all duration-300 group disabled:cursor-not-allowed"
+                  className="w-full h-11 mt-2 cursor-pointer bg-linear-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent transition-all duration-300 group disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <div className="flex items-center gap-2">
@@ -306,7 +235,7 @@ export default function LoginPage() {
                   )}
                 </Button>
 
-                <div className="relative my-6">
+                <div className="relative mt-6">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-border/50" />
                   </div>
@@ -317,76 +246,76 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <p className="text-center text-sm text-muted-foreground">
-                  Don&apos;t have an account?{" "}
-                  <Link
-                    href="/auth/signup"
-                    className={cn(
-                      "text-accent hover:text-accent/80 font-semibold hover:underline transition-all inline-flex items-center gap-1 group",
-                      doorOpen && "pointer-events-none",
-                    )}
-                  >
-                    Create account
-                    <ArrowRight
-                      size={14}
-                      className="group-hover:translate-x-0.5 transition-transform"
-                    />
-                  </Link>
-                </p>
+                {/* <p className="text-center text-sm text-muted-foreground">
+                    Don&apos;t have an account?{" "}
+                    <Link
+                      href="/auth/signup"
+                      className={cn(
+                        "text-accent hover:text-accent/80 font-semibold hover:underline transition-all inline-flex items-center gap-1 group",
+                        doorOpen && "pointer-events-none",
+                      )}
+                    >
+                      Create account
+                      <ArrowRight
+                        size={14}
+                        className="group-hover:translate-x-0.5 transition-transform"
+                      />
+                    </Link>
+                  </p> */}
               </form>
             </CardContent>
           </Card>
 
-          {showDemoCredentials && (
-            <div className="mt-8">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border/30" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="px-3 bg-white/90 dark:bg-slate-900/90 text-muted-foreground">
-                    🧪 Demo Access
-                  </span>
-                </div>
-              </div>
-
-              <Card className="mt-4 border-2 border-dashed border-blue-200 dark:border-blue-800/50 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10 rounded-xl">
-                <CardContent className="p-4">
-                  <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
-                    <Sparkles size={12} />
-                    Quick Demo Login
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {DEMO_CREDENTIALS.map((cred, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setDemoCredentials(cred)}
-                        disabled={loading || doorOpen}
-                        className="text-left px-3 py-2 text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <span className="font-semibold">
-                          {cred.role.replace(/_/g, " ")}
-                        </span>
-                        <br />
-                        <span className="text-[10px] opacity-75">
-                          {cred.email}
-                        </span>
-                      </button>
-                    ))}
+          {/* {showDemoCredentials && (
+              <div className="mt-8">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border/30" />
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-3 bg-white/90 dark:bg-slate-900/90 text-muted-foreground">
+                      🧪 Demo Access
+                    </span>
+                  </div>
+                </div>
+
+                <Card className="mt-4 border-2 border-dashed border-blue-200 dark:border-blue-800/50 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10 rounded-xl">
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
+                      <Sparkles size={12} />
+                      Quick Demo Login
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {DEMO_CREDENTIALS.map((cred, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setDemoCredentials(cred)}
+                          disabled={loading || doorOpen}
+                          className="text-left px-3 py-2 text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <span className="font-semibold">
+                            {cred.role.replace(/_/g, " ")}
+                          </span>
+                          <br />
+                          <span className="text-[10px] opacity-75">
+                            {cred.email}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )} */}
         </div>
       </div>
 
       {/* Right Panel */}
       <div
         className={cn(
-          "hidden lg:flex flex-1 bg-gradient-to-br from-primary via-primary/90 to-blue-900 dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 items-center justify-center p-12 relative overflow-hidden transition-all duration-700 ease-in-out will-change-transform",
+          "hidden lg:flex flex-1 bg-linear-to-br from-primary via-primary/90 to-blue-900 dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 items-center justify-center p-12 relative overflow-hidden transition-all duration-700 ease-in-out will-change-transform",
           doorOpen && "translate-x-full opacity-0",
         )}
       >
@@ -407,7 +336,7 @@ export default function LoginPage() {
           ]}
           className={cn(
             "absolute inset-0 z-0 text-white/10",
-            "[mask-image:radial-gradient(520px_circle_at_center,white,transparent)]",
+            "mask-[radial-gradient(520px_circle_at_center,white,transparent)]",
             "skew-y-6",
           )}
         />

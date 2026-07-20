@@ -1,21 +1,10 @@
 "use client";
 
-import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function Home() {
-  const { user, loading } = useAuth();
+export default async function Home() {
   const router = useRouter();
-  console.log(user, loading);
-  useEffect(() => {
-    console.log(user, loading);
-    if (user) {
-      router.push("/workspace/admin/dashboard");
-    } else {
-      router.push("/auth/login");
-    }
-  });
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background dark:bg-slate-950">

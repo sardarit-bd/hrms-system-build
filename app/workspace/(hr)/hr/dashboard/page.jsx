@@ -21,7 +21,7 @@ import HRSkeleton from "../../../../../components/workspace/hr/dashboard/HRSkele
 import { ClockCalendarCard } from "../../../../../components/share/clock-calendar-card";
 
 export default function HRManagerDashboard() {
-  const { apiRequest } = useAuth();
+  // const { apiRequest } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,95 +38,95 @@ export default function HRManagerDashboard() {
   const [upcomingHolidays, setUpcomingHolidays] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const fetchDashboardData = useCallback(
-    async (showRefreshToast = false) => {
-      try {
-        const [
-          usersRes,
-          deptRes,
-          leaveRes,
-          policiesRes,
-          rostersRes,
-          shiftsRes,
-          notificationsRes,
-          holidaysRes,
-        ] = await Promise.allSettled([
-          apiRequest("/users?per_page=500"),
-          apiRequest("/departments"),
-          apiRequest("/leave/requests?per_page=200"),
-          apiRequest("/attendance/policies"),
-          apiRequest("/roster?per_page=200"),
-          apiRequest("/shifts"),
-          apiRequest("/notifications?per_page=20"),
-          apiRequest("/holidays/upcoming?limit=5"),
-        ]);
+  // const fetchDashboardData = useCallback(
+  //   async (showRefreshToast = false) => {
+  //     try {
+  //       const [
+  //         usersRes,
+  //         deptRes,
+  //         leaveRes,
+  //         policiesRes,
+  //         rostersRes,
+  //         shiftsRes,
+  //         notificationsRes,
+  //         holidaysRes,
+  //       ] = await Promise.allSettled([
+  //         apiRequest("/users?per_page=500"),
+  //         apiRequest("/departments"),
+  //         apiRequest("/leave/requests?per_page=200"),
+  //         apiRequest("/attendance/policies"),
+  //         apiRequest("/roster?per_page=200"),
+  //         apiRequest("/shifts"),
+  //         apiRequest("/notifications?per_page=20"),
+  //         apiRequest("/holidays/upcoming?limit=5"),
+  //       ]);
 
-        // Process Users
-        if (usersRes.status === "fulfilled" && usersRes.value?.data) {
-          setUsers(usersRes.value.data);
-        }
+  //       // Process Users
+  //       if (usersRes.status === "fulfilled" && usersRes.value?.data) {
+  //         setUsers(usersRes.value.data);
+  //       }
 
-        // Process Departments
-        if (deptRes.status === "fulfilled" && deptRes.value?.data) {
-          setDepartments(deptRes.value.data);
-        }
+  //       // Process Departments
+  //       if (deptRes.status === "fulfilled" && deptRes.value?.data) {
+  //         setDepartments(deptRes.value.data);
+  //       }
 
-        // Process Leave Requests
-        if (leaveRes.status === "fulfilled" && leaveRes.value?.data) {
-          setLeaveRequests(leaveRes.value.data);
-        }
+  //       // Process Leave Requests
+  //       if (leaveRes.status === "fulfilled" && leaveRes.value?.data) {
+  //         setLeaveRequests(leaveRes.value.data);
+  //       }
 
-        // Process Attendance Policies
-        if (policiesRes.status === "fulfilled" && policiesRes.value?.data) {
-          setAttendancePolicies(policiesRes.value.data);
-        }
+  //       // Process Attendance Policies
+  //       if (policiesRes.status === "fulfilled" && policiesRes.value?.data) {
+  //         setAttendancePolicies(policiesRes.value.data);
+  //       }
 
-        // Process Rosters
-        if (rostersRes.status === "fulfilled" && rostersRes.value?.data) {
-          setRosters(rostersRes.value.data);
-        }
+  //       // Process Rosters
+  //       if (rostersRes.status === "fulfilled" && rostersRes.value?.data) {
+  //         setRosters(rostersRes.value.data);
+  //       }
 
-        // Process Shifts
-        if (shiftsRes.status === "fulfilled" && shiftsRes.value?.data) {
-          setShifts(shiftsRes.value.data);
-        }
+  //       // Process Shifts
+  //       if (shiftsRes.status === "fulfilled" && shiftsRes.value?.data) {
+  //         setShifts(shiftsRes.value.data);
+  //       }
 
-        // Process Notifications
-        if (
-          notificationsRes.status === "fulfilled" &&
-          notificationsRes.value?.data
-        ) {
-          setNotifications(notificationsRes.value.data);
-          // Get unread count
-          const unread = notificationsRes.value.data.filter(
-            (n) => !n.is_read,
-          ).length;
-          setUnreadCount(unread);
-        }
+  //       // Process Notifications
+  //       if (
+  //         notificationsRes.status === "fulfilled" &&
+  //         notificationsRes.value?.data
+  //       ) {
+  //         setNotifications(notificationsRes.value.data);
+  //         // Get unread count
+  //         const unread = notificationsRes.value.data.filter(
+  //           (n) => !n.is_read,
+  //         ).length;
+  //         setUnreadCount(unread);
+  //       }
 
-        // Process Upcoming Holidays
-        if (holidaysRes.status === "fulfilled" && holidaysRes.value?.data) {
-          setUpcomingHolidays(holidaysRes.value.data);
-        }
+  //       // Process Upcoming Holidays
+  //       if (holidaysRes.status === "fulfilled" && holidaysRes.value?.data) {
+  //         setUpcomingHolidays(holidaysRes.value.data);
+  //       }
 
-        if (showRefreshToast) {
-          gooeyToast.success("Dashboard Refreshed", {
-            description: "HR dashboard data has been updated.",
-            duration: 2000,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        gooeyToast.error("Failed to Load Dashboard", {
-          description: error.message,
-        });
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [apiRequest],
-  );
+  //       if (showRefreshToast) {
+  //         gooeyToast.success("Dashboard Refreshed", {
+  //           description: "HR dashboard data has been updated.",
+  //           duration: 2000,
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch dashboard data:", error);
+  //       gooeyToast.error("Failed to Load Dashboard", {
+  //         description: error.message,
+  //       });
+  //     } finally {
+  //       setLoading(false);
+  //       setRefreshing(false);
+  //     }
+  //   },
+  //   [apiRequest],
+  // );
 
   useEffect(() => {
     fetchDashboardData();
@@ -174,7 +174,6 @@ export default function HRManagerDashboard() {
           <ClockCalendarCard currentTime={currentTime} />
         </section>
         <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">

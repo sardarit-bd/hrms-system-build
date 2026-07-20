@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@/lib/auth-context";
 import { GooeyToaster } from "@/components/ui/goey-toaster";
 import ReduxProvider from "@/components/providers/ReduxProvider";
+
 import "./globals.css";
 
 const geist = Geist({
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
